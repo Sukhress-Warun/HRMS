@@ -71,7 +71,7 @@ public class Attendance {
         this.workedTime = workedTime;
     }
 
-    public boolean isAppliedLeave() {
+    public boolean getAppliedLeave() {
         return appliedLeave;
     }
 

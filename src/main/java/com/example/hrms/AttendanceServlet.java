@@ -65,20 +65,19 @@ public class AttendanceServlet extends HttpServlet {
         BigDecimal id;
         id = data.optBigDecimal("id", null);
         if (id == null) {
-            res = JsonUtils.formatJSONObject("checked-in", false, "id is required", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            res = JsonUtils.formatJSONObject("checked-in", false, "id is required as a Number", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
             response.getWriter().write(res.toString());
             return;
         }
-        String date = data.optString("date", null);
-        if(date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}")){
-            res = JsonUtils.formatJSONObject("checked-in", false, (date != null) ? "date format is invalid" : "date is required", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
-            response.getWriter().write(res.toString());
-            return;
-        }
-        // current time in hh:mm:ss
-        SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm:ss");
-        Calendar calendar = Calendar.getInstance();
-        String time = dateFormat.format(calendar.getTime());
+//        String date = data.optString("date", null);
+//        if(date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}")){
+//            res = JsonUtils.formatJSONObject("checked-in", false, (date != null) ? "date format is invalid" : "date is required", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+//            response.getWriter().write(res.toString());
+//            return;
+//        }
+
+        String date = new SimpleDateFormat("yyyy-MM-dd").format(Calendar.getInstance().getTime());
+        String time = new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime());
 
 
 
