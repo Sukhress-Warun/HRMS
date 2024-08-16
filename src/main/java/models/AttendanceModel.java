@@ -37,9 +37,15 @@ public class AttendanceModel {
         }
     }
 
+    public static Attendance addAttendance(BigDecimal employeeId, String date, String time){
+
+    }
+
     public static JSONObject checkIn(BigDecimal employeeId, String date, String time){
         Attendance attendance = getAttendance(employeeId, date);
+        if(attendance == null){
 
+        }
 
     }
 
