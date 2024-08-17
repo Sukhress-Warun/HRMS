@@ -147,7 +147,37 @@ public class AttendanceServlet extends HttpServlet {
 
     }
 
-    public static void applyLeave(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public static void applyLeave(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+        JsonUtils.prepareResponse(response);
+        JSONObject res;
+
+        JSONObject data = JsonUtils.getRequestJSONObject(request);
+        BigDecimal id;
+
+        id = data.optBigDecimal("id", null);
+        if (id == null) {
+            res = JsonUtils.formatJSONObject("applied_leave", false, "id is required as a Number", "date", JSONObject.NULL);
+            response.getWriter().write(res.toString());
+            return;
+        }
+
+        String date = data.optString("date", null);
+        if(date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}")){
+            res = JsonUtils.formatJSONObject("applied-leave", false, (date != null) ? "date format is invalid" : "date is required", "date", JSONObject.NULL);
+            response.getWriter().write(res.toString());
+            return;
+        }
+        date = Date.valueOf(date).toString();
+//        String date = new SimpleDateFormat("yyyy-MM-dd").format(Calendar.getInstance().getTime());
+
+        res = AttendanceModel.applyLeave(id, date);
+        if(res == null){
+            res = JsonUtils.formatJSONObject("applied-leave", false, "error applying leave", "date", JSONObject.NULL);
+            return;
+        }
+        response.getWriter().write(res.toString());
+
 
     }
 

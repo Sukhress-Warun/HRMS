@@ -48,15 +48,15 @@ public class AttendanceModel {
 
     }
 
-    public static Attendance addAttendance(BigDecimal employeeId, String date, String time){
+    public static Attendance addAttendance(BigDecimal employeeId, String date, String time, boolean appliedLeave){
         Connection con = null;
         try{
             con = DatabaseConnection.initializeDatabase();
             PreparedStatement st = con.prepareStatement("insert into attendance (employee_id, date, first_check_in, applied_leave) values (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
             st.setBigDecimal(1, employeeId);
             st.setDate(2, Date.valueOf(date));
-            st.setTime(3, Time.valueOf(time));
-            st.setBoolean(4, false);
+            st.setTime(3, (time != null) ? Time.valueOf(time) : null);
+            st.setBoolean(4, appliedLeave);
             st.executeUpdate();
             ResultSet rs = st.getGeneratedKeys();
             rs.next();
@@ -80,7 +80,7 @@ public class AttendanceModel {
         }
 
         if(attendance == null){
-            attendance = addAttendance(employeeId, date, time);
+            attendance = addAttendance(employeeId, date, null, false);
             if (attendance == null){
                 return JsonUtils.formatJSONObject("checked-in", false, "error adding attendance", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
             }
@@ -114,6 +114,12 @@ public class AttendanceModel {
             st.setTime(1, Time.valueOf(time));
             st.setBigDecimal(2, attendance.getId());
             st.executeUpdate();
+            if(status.getString("current_status").equals("fresh")) {
+                PreparedStatement st2 = con.prepareStatement("update attendance set first_check_in=? where id=?");
+                st2.setTime(1, Time.valueOf(time));
+                st2.setBigDecimal(2, attendance.getId());
+                st2.executeUpdate();
+            }
             return JsonUtils.formatJSONObject("checked-in", true, "success", "log", new JSONObject().put("date", date).put("time", time));
         }
         catch (Exception e){
@@ -134,10 +140,10 @@ public class AttendanceModel {
         }
 
         if (attendance == null) {
-            return JsonUtils.formatJSONObject("checked-out", false, "no check-in found", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            return JsonUtils.formatJSONObject("checked-out", false, "no attendance record found", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
         }
         else if(attendance.getAppliedLeave()){
-            return JsonUtils.formatJSONObject("checked-out", false, "leave applied", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            return JsonUtils.formatJSONObject("checked-out", false, "leave applied and no check in found", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
         }
 
         JSONObject status = getStatus(attendance.getId(), true);
@@ -195,6 +201,54 @@ public class AttendanceModel {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public static JSONObject applyLeave(BigDecimal employeeId, String date){
+
+        Attendance attendance;
+        try{
+            attendance = getAttendance(employeeId, date);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            return JsonUtils.formatJSONObject("applied-leave", false, "error retrieving attendance", "date", JSONObject.NULL);
+        }
+
+        if(attendance == null){
+            attendance = addAttendance(employeeId, date, null, false);
+            if(attendance == null){
+                return JsonUtils.formatJSONObject("applied-leave", false, "error adding attendance", "date", JSONObject.NULL);
+            }
+        }
+        else if(attendance.getAppliedLeave()){
+            return JsonUtils.formatJSONObject("applied-leave", false, "leave already applied", "date", date);
+        }
+        else if(!attendance.getAppliedLeave()){
+            JSONObject status = getStatus(attendance.getId(), false);
+            if(status == null){
+                return JsonUtils.formatJSONObject("applied-leave", false, "error retrieving status", "date", date);
+            }
+            if(!status.getString("current_status").equals("fresh")) {
+                return JsonUtils.formatJSONObject("applied-leave", false, "leave cannot be applied after check-in", "date", date);
+            }
+        }
+
+        Connection con = null;
+        try{
+            con = DatabaseConnection.initializeDatabase();
+            PreparedStatement st = con.prepareStatement("update attendance set applied_leave=true where id=?");
+            st.setBigDecimal(1, attendance.getId());
+            st.executeUpdate();
+            PreparedStatement st2 = con.prepareStatement("update employee set leave_available=leave_available-1 where id=?");
+            st2.setBigDecimal(1, employeeId);
+            st2.executeUpdate();
+            return JsonUtils.formatJSONObject("applied-leave", true, "success", "date", date);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+
     }
 
     public static JSONObject getStatus(BigDecimal attendanceId, boolean getLogId){
