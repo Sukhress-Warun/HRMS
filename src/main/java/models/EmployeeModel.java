@@ -1,15 +1,15 @@
 package models;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonParser;
-import customUtils.*;
-import database.*;
-import entities.*;
+import java.math.BigDecimal;
+import java.sql.*;
+
 import org.json.*;
 import com.google.gson.*;
 
-import java.math.BigDecimal;
-import java.sql.*;
+import customUtils.*;
+import database.*;
+import entities.*;
+
 
 public class EmployeeModel {
 

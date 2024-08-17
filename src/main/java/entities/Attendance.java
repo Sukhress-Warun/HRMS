@@ -1,5 +1,10 @@
 package entities;
 
+import java.math.BigDecimal;
+
+import com.google.gson.annotations.SerializedName;
+
+
 //create table attendance (id bigint auto_increment,
 //                         date date not null,
 //                         employee_id bigint not null ,
@@ -9,10 +14,6 @@ package entities;
 //                         last_check_out time,
 //                         primary key (id),
 //foreign key (employee_id) references employee(id) on delete cascade );
-
-import com.google.gson.annotations.SerializedName;
-
-import java.math.BigDecimal;
 
 public class Attendance {
 

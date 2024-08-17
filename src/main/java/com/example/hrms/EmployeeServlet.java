@@ -13,48 +13,6 @@ import entities.*;
 import models.*;
 import customUtils.*;
 
-//
-//create table dept(name varchar(20),
-//id bigint not null auto_increment,
-//primary key (id));
-//
-//create table role(name varchar(20),
-//id bigint not null auto_increment,
-//primary key (id));
-//
-//create table employee (name varchar(20),
-//id bigint auto_increment,
-//role_id bigint,
-//doj date,
-//dob date,
-//gender ENUM('male', 'female', 'others'),
-//reporting_to bigint,
-//dept_id bigint,
-//leave_available int,
-//foreign key (reporting_to) references employee(id),
-//foreign key (dept_id) references dept(id),
-//foreign key (role_id) references role(id),
-//primary key (id)
-//);
-//
-//create table attendance (id bigint auto_increment,
-//                         date date,
-//                         employee_id bigint,
-//                         hours_worked double,
-//                         applied_leave boolean,
-//                         first_check_in time,
-//                         last_check_out time,
-//                         primary key (id),
-//foreign key (employee_id) references employee(id) on delete cascade );
-//
-//create table log (id bigint auto_increment,
-//                  employee_id bigint,
-//                  check_in time,
-//                  check_out time,
-//                  attendance_id bigint,
-//                  primary key (id),
-//foreign key (employee_id) references employee(id) ,
-//foreign key (attendance_id) references attendance(id) on delete cascade );
 
 @WebServlet("/employee/*")
 public class EmployeeServlet extends HttpServlet {
@@ -63,7 +21,7 @@ public class EmployeeServlet extends HttpServlet {
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
-//      TODO search , pagination via params
+//      TODO : search , pagination via params
 
 //        String value = request.getParameter("name")
 

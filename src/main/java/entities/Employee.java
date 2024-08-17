@@ -1,5 +1,10 @@
 package entities;
 
+import java.math.BigDecimal;
+
+import com.google.gson.annotations.SerializedName;
+
+
 //create table employee (name varchar(20),
 //id bigint auto_increment,
 //role_id bigint,
@@ -14,10 +19,6 @@ package entities;
 //foreign key (role_id) references role(id),
 //primary key (id)
 //);
-
-import com.google.gson.annotations.SerializedName;
-
-import java.math.BigDecimal;
 
 public class Employee{
 
