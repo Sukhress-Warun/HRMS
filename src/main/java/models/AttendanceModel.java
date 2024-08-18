@@ -14,7 +14,7 @@ import entities.*;
 //create table attendance (id bigint auto_increment,
 //                         date date not null,
 //                         employee_id bigint not null ,
-//                         worked_time time,
+//                         worked_time time default '00:00:00',
 //                         applied_leave boolean,
 //                         first_check_in time,
 //                         last_check_out time,
@@ -102,7 +102,7 @@ public class AttendanceModel {
         // check time greater than previous checkout
         if(status.get("last_check_out") != JSONObject.NULL){ // null if status is fresh
             String lastCheckOut = status.getString("last_check_out");
-            if(Time.valueOf(time).before(Time.valueOf(lastCheckOut))){
+            if(Time.valueOf(time).before(Time.valueOf(lastCheckOut)) || Time.valueOf(time).equals(Time.valueOf(lastCheckOut))){
                 return JsonUtils.formatJSONObject("checked-in", false, "check-in time should be greater than last check-out", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL))
                         .put("info", status);
             }
@@ -160,7 +160,7 @@ public class AttendanceModel {
         }
         // check time greater than previous check-in
         String lastCheckIn = status.getString("last_check_in");
-        if (Time.valueOf(time).before(Time.valueOf(lastCheckIn))) {
+        if (Time.valueOf(time).before(Time.valueOf(lastCheckIn)) || Time.valueOf(time).equals(Time.valueOf(lastCheckIn))) {
             return JsonUtils.formatJSONObject("checked-out", false, "check-out time should be greater than last check-in", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL))
                     .put("info", status);
         }
@@ -256,7 +256,7 @@ public class AttendanceModel {
         try{
             con = DatabaseConnection.initializeDatabase();
             // ! if everything in database is added through the application, then it works. else if already loaded in database then all logs should be checked.
-            PreparedStatement st = con.prepareStatement("select * from log where attendance_id=? order by id desc limit 1");
+            PreparedStatement st = con.prepareStatement("select * from log where attendance_id=? order by check_in desc limit 1");
             st.setBigDecimal(1, attendanceId);
             ResultSet rs = st.executeQuery();
             JSONArray jsArr = JsonUtils.convertResultSetToJSONArray(rs);

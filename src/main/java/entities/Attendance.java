@@ -8,7 +8,7 @@ import com.google.gson.annotations.SerializedName;
 //create table attendance (id bigint auto_increment,
 //                         date date not null,
 //                         employee_id bigint not null ,
-//                         worked_time time,
+//                         worked_time time default '00:00:00',
 //                         applied_leave boolean,
 //                         first_check_in time,
 //                         last_check_out time,

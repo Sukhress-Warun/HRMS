@@ -13,7 +13,7 @@ import com.google.gson.annotations.SerializedName;
 //gender ENUM('male', 'female', 'others'),
 //reporting_to bigint,
 //dept_id bigint,
-//leave_available int,
+//leave_available int default 0,
 //foreign key (reporting_to) references employee(id),
 //foreign key (dept_id) references dept(id),
 //foreign key (role_id) references role(id),

@@ -21,7 +21,7 @@ import customUtils.*;
 //create table attendance (id bigint auto_increment,
 //                         date date not null,
 //                         employee_id bigint not null ,
-//                         worked_time time,
+//                         worked_time time default '00:00:00',
 //                         applied_leave boolean,
 //                         first_check_in time,
 //                         last_check_out time,
@@ -38,6 +38,8 @@ import customUtils.*;
 @WebServlet("/attendance/*")
 public class AttendanceServlet extends HttpServlet {
 
+    static Gson gson = new GsonBuilder().serializeNulls().create();
+
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
         String path = request.getPathInfo();
@@ -51,6 +53,23 @@ public class AttendanceServlet extends HttpServlet {
             } else if (path.equals("/apply-leave")) {
                 applyLeave(request, response);
                 return;
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            JsonUtils.prepareResponse(response);
+            response.getWriter().write(JsonUtils.formatJSONObject("error", true, "error occurred", null, null).toString());
+            return;
+        }
+
+    }
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+        String path = request.getPathInfo();
+        try {
+            if (path.equals("/status")) {
+                status(request, response);
             }
         }
         catch (Exception e) {
@@ -178,7 +197,52 @@ public class AttendanceServlet extends HttpServlet {
         }
         response.getWriter().write(res.toString());
 
-
     }
 
+    public static void status(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+        JsonUtils.prepareResponse(response);
+        JSONObject res;
+
+        BigDecimal id = null;
+        try {
+            id = new BigDecimal(request.getParameter("id"));
+        } catch (Exception e) {
+            res = JsonUtils.formatJSONObject("retreived", false, "id is required as a Number", "attendance", JSONObject.NULL);
+            response.getWriter().write(res.toString());
+            return;
+        }
+
+        String date = request.getParameter("date");
+        if (date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            res = JsonUtils.formatJSONObject("retrieved", false, (date != null) ? "date format is invalid" : "date is required", "attendance", JSONObject.NULL);
+            response.getWriter().write(res.toString());
+            return;
+        }
+        date = Date.valueOf(date).toString();
+
+//        String date = new SimpleDateFormat("yyyy-MM-dd").format(Calendar.getInstance().getTime());
+
+        Attendance attendance = AttendanceModel.getAttendance(id, date);
+        if (attendance == null) {
+            res = JsonUtils.formatJSONObject("retrieved", false, "error retrieving attendance", "attendance", JSONObject.NULL);
+            response.getWriter().write(res.toString());
+            return;
+        }
+        JSONObject status = AttendanceModel.getStatus(attendance.getId(), false);
+        if (status == null) {
+            res = JsonUtils.formatJSONObject("retrieved", false, "error retrieving status", "attendance", JSONObject.NULL);
+            response.getWriter().write(res.toString());
+            return;
+        }
+
+        JSONObject attendanceJSON = new JSONObject(gson.toJson(attendance));
+        attendanceJSON.remove("id");
+        attendanceJSON.remove("employee_id");
+        if(status.get("last_check_out") == JSONObject.NULL){
+            status.remove("last_check_out");
+        }
+        res = JsonUtils.formatJSONObject("retrieved", true, "success", "attendance", attendanceJSON.put("status", status));
+        response.getWriter().write(res.toString());
+    }
 }
