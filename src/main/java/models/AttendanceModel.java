@@ -278,4 +278,19 @@ public class AttendanceModel {
         }
     }
 
+    public static JSONArray getAttendanceBetweenDates(BigDecimal employeeId, String fromDate, String toDate) {
+        Connection con = null;
+        try {
+            con = DatabaseConnection.initializeDatabase();
+            PreparedStatement st = con.prepareStatement("select * from attendance where employee_id=? and date between ? and ?");
+            st.setBigDecimal(1, employeeId);
+            st.setDate(2, Date.valueOf(fromDate));
+            st.setDate(3, Date.valueOf(toDate));
+            ResultSet rs = st.executeQuery();
+            return JsonUtils.convertResultSetToJSONArray(rs);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

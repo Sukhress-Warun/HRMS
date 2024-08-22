@@ -57,8 +57,8 @@ public class HolidayModel{
         try {
             con = DatabaseConnection.initializeDatabase();
             PreparedStatement st = con.prepareStatement("insert into holiday (from_date, to_date, description) values (?,?,?)", Statement.RETURN_GENERATED_KEYS);
-            st.setString(1, holiday.getFromDate());
-            st.setString(2, holiday.getToDate());
+            st.setDate(1, Date.valueOf(holiday.getFromDate()));
+            st.setDate(2, Date.valueOf(holiday.getToDate()));
             st.setString(3, holiday.getDescription());
             st.executeUpdate();
             ResultSet rs = st.getGeneratedKeys();
@@ -80,8 +80,8 @@ public class HolidayModel{
         try {
             con = DatabaseConnection.initializeDatabase();
             PreparedStatement st = con.prepareStatement("update holiday set from_date=?, to_date=?, description=? where id=?");
-            st.setString(1, holiday.getFromDate());
-            st.setString(2, holiday.getToDate());
+            st.setDate(1, Date.valueOf(holiday.getFromDate()));
+            st.setDate(2, Date.valueOf(holiday.getToDate()));
             st.setString(3, holiday.getDescription());
             st.setBigDecimal(4, holiday.getId());
             st.executeUpdate();
@@ -119,4 +119,24 @@ public class HolidayModel{
         }
     }
 
+    public static JSONArray getHolidaysBetweenDates(String fromDate, String toDate) {
+        Connection con = null;
+        try{
+            con = DatabaseConnection.initializeDatabase();
+            // overlapping range find in holidays
+            PreparedStatement st = con.prepareStatement("select * from holiday where (from_date between ? and ?) or (to_date between ? and ?) or (from_date <= ? and to_date >= ?)");
+            st.setDate(1, Date.valueOf(fromDate));
+            st.setDate(2, Date.valueOf(toDate));
+            st.setDate(3, Date.valueOf(fromDate));
+            st.setDate(4, Date.valueOf(toDate));
+            st.setDate(5, Date.valueOf(fromDate));
+            st.setDate(6, Date.valueOf(toDate));
+            ResultSet rs = st.executeQuery();
+            return JsonUtils.convertResultSetToJSONArray(rs);
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

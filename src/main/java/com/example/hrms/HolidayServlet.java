@@ -2,6 +2,7 @@ package com.example.hrms;
 
 import java.io.*;
 import java.math.BigDecimal;
+import java.sql.Date;
 import javax.servlet.http.*;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -75,6 +76,11 @@ public class HolidayServlet extends HttpServlet {
             Holiday holiday = gson.fromJson(request.getReader(), Holiday.class);
             // * id is auto generated
             holiday.setId(null);
+            if(Date.valueOf(holiday.getToDate()).before(Date.valueOf(holiday.getFromDate()))){
+                res = JsonUtils.formatJSONObject("added", false, "error adding holiday : to_date is before from_date", "holiday", null);
+                response.getWriter().write(res.toString());
+                return;
+            }
             res = HolidayModel.addHoliday(holiday);
 
         }
@@ -108,6 +114,11 @@ public class HolidayServlet extends HttpServlet {
             return;
         }
 
+        if(Date.valueOf(holiday.getToDate()).before(Date.valueOf(holiday.getFromDate()))){
+            res = JsonUtils.formatJSONObject("updated", false, "error updating holiday : to_date is before from_date", "holiday", null);
+            response.getWriter().write(res.toString());
+            return;
+        }
         res = HolidayModel.updateHoliday(holiday);
         response.getWriter().write(res.toString());
     }

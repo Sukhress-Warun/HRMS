@@ -4,6 +4,7 @@ import org.json.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.util.stream.Collectors;
 
@@ -23,6 +24,9 @@ public class JsonUtils {
             JSONObject obj = new JSONObject();
             for (int i = 0; i < total_columns; i++) {
                 Object value = resultSet.getObject(i + 1);
+                if(value instanceof Date){
+                    value = ((Date) value).toString();
+                }
                 obj.put(resultSet.getMetaData().getColumnLabel(i + 1).toLowerCase(), (value != null) ? value : JSONObject.NULL);
             }
             jsonArray.put(obj);

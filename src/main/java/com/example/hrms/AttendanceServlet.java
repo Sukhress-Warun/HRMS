@@ -71,6 +71,9 @@ public class AttendanceServlet extends HttpServlet {
             if (path.equals("/status")) {
                 status(request, response);
             }
+            else if(path.equals("/calendar")){
+                calendar(request, response);
+            }
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -243,6 +246,91 @@ public class AttendanceServlet extends HttpServlet {
             status.remove("last_check_out");
         }
         res = JsonUtils.formatJSONObject("retrieved", true, "success", "attendance", attendanceJSON.put("status", status));
+        response.getWriter().write(res.toString());
+    }
+
+    public static void calendar(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+        JsonUtils.prepareResponse(response);
+        JSONObject res;
+
+        BigDecimal id = null;
+        try {
+            id = new BigDecimal(request.getParameter("id"));
+        } catch (Exception e) {
+            res = JsonUtils.formatJSONObject("retrieved", false, "id is required as a Number", "calendar", new JSONArray());
+            response.getWriter().write(res.toString());
+            return;
+        }
+
+        String fromDate = request.getParameter("from_date");
+        if (fromDate == null || !fromDate.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            res = JsonUtils.formatJSONObject("retrieved", false, (fromDate != null) ? "date format is invalid" : "date is required", "calendar", new JSONArray());
+            response.getWriter().write(res.toString());
+            return;
+        }
+        fromDate = Date.valueOf(fromDate).toString();
+
+        String toDate = request.getParameter("to_date");
+        if (toDate == null || !toDate.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            res = JsonUtils.formatJSONObject("retrieved", false, (toDate != null) ? "date format is invalid" : "date is required", "calendar", new JSONArray());
+            response.getWriter().write(res.toString());
+            return;
+        }
+        toDate = Date.valueOf(toDate).toString();
+
+        if(Date.valueOf(toDate).before(Date.valueOf(fromDate))){
+            res = JsonUtils.formatJSONObject("retrieved", false, "to_date is before from_date", "calendar", new JSONArray());
+            response.getWriter().write(res.toString());
+            return;
+        }
+
+        JSONArray attendance = AttendanceModel.getAttendanceBetweenDates(id, fromDate, toDate);
+        JSONArray holidays = HolidayModel.getHolidaysBetweenDates(fromDate, toDate);
+        JSONArray calendar = new JSONArray();
+
+        String[] week = {"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"};
+        // iterate through all dates
+        Date date = Date.valueOf(fromDate);
+        while(date.before(Date.valueOf(toDate)) || date.equals(Date.valueOf(toDate))){
+            JSONObject day = new JSONObject();
+            day.put("date", date.toString());
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(date);
+            day.put("day", week[cal.get(Calendar.DAY_OF_WEEK) - 1]);
+            String type = null;
+            for(int i = 0; i < attendance.length(); i++){
+                JSONObject att = attendance.getJSONObject(i);
+                if(Date.valueOf(att.getString("date")).equals(date)){
+                    type = (att.getBoolean("applied_leave")) ? "leave" : "present";
+                    day.put("attendance", att);
+                    break;
+                }
+            }
+            if(type == null){
+                for(int i = 0; i < holidays.length(); i++){
+                    JSONObject hol = holidays.getJSONObject(i);
+                    if((Date.valueOf(hol.getString("from_date")).before(date) && Date.valueOf(hol.getString("to_date")).after(date)) || Date.valueOf(hol.getString("from_date")).equals(date) || Date.valueOf(hol.getString("to_date")).equals(date)) {
+                        type = "holiday";
+                        day.put("holiday", hol);
+                        break;
+                    }
+                }
+            }
+            if(type == null) {
+                if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY || cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY){
+                    type = "weekend";
+                }
+                else {
+                    type = "no-record";
+                }
+            }
+            day.put("type", type);
+            calendar.put(day);
+            date = Date.valueOf(date.toLocalDate().plusDays(1));
+        }
+
+        res = JsonUtils.formatJSONObject("retrieved", true, "success", "calendar", calendar);
         response.getWriter().write(res.toString());
     }
 }
