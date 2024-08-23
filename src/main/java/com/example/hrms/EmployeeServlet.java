@@ -2,6 +2,7 @@ package com.example.hrms;
 
 import java.io.*;
 import java.math.BigDecimal;
+import java.util.*;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import javax.servlet.annotation.*;
@@ -105,13 +106,30 @@ public class EmployeeServlet extends HttpServlet {
 
     public void getAllEmployees(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        //TODO : search , pagination via params
-
         JsonUtils.prepareResponse(response);
         JSONObject res;
 
+        String searchName = request.getParameter("search_name") != null ? request.getParameter("search_name") : "";
+        int perPage = 10;
+        int page = 1;
+        try {
+            perPage = request.getParameter("per_page") != null ? Integer.parseInt(request.getParameter("per_page")) : 10;
+            page = request.getParameter("page") != null ? Integer.parseInt(request.getParameter("page")) : 1;
+        } catch (NumberFormatException e) {}
+        String sortCol = request.getParameter("sort_column") != null ? request.getParameter("sort_column") : "name";
+        String sortOrder = request.getParameter("sort_order") != null ? request.getParameter("sort_order") : "asc";
+
+        Set<String> validColumns = new HashSet<>(Arrays.asList("name", "doj", "dob", "available_leave"));
+        if(!validColumns.contains(sortCol)){
+            sortCol = "name";
+        }
+        if(!sortOrder.equals("asc") && !sortOrder.equals("desc")){
+            sortOrder = "asc";
+        }
+
+
         // get all employees
-        res = EmployeeModel.getAllEmployees();
+        res = EmployeeModel.getAllEmployees(searchName, perPage, page, sortCol, sortOrder);
         response.getWriter().write(res.toString());
 
     }

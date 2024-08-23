@@ -15,13 +15,24 @@ public class EmployeeModel {
 
     static Gson gson = new GsonBuilder().serializeNulls().create();
 
-    public static JSONObject getAllEmployees(){
+    public static JSONObject getAllEmployees(String searchName, int perPage, int page,String sortCol,String sortOrder){
         Connection con = null;
         try{
             con = DatabaseConnection.initializeDatabase();
-            ResultSet rs = con.createStatement().executeQuery("select * from employee");
+            String query = "select * from employee where name like ? order by "+sortCol+" "+sortOrder+" limit ? offset ?";
+            PreparedStatement st = con.prepareStatement(query);
+            st.setString(1, "%"+searchName+"%");
+            st.setInt(2, perPage);
+            st.setInt(3, (page-1)*perPage);
+            ResultSet rs = st.executeQuery();
             JSONArray jsArr =  JsonUtils.convertResultSetToJSONArray(rs);
-            return JsonUtils.formatJSONObject("retrieved", (!jsArr.isEmpty()), (!jsArr.isEmpty()) ? "success" : "no employees exist", "employees", jsArr);
+            JSONObject pageDetails = new JSONObject();
+            pageDetails.put("per_page", perPage);
+            pageDetails.put("page", page);
+            pageDetails.put("search_name", searchName);
+            pageDetails.put("sort_column", sortCol);
+            pageDetails.put("sort_order", sortOrder);
+            return JsonUtils.formatJSONObject("retrieved", (!jsArr.isEmpty()), (!jsArr.isEmpty()) ? "success" : "no employees exist", "employees", jsArr).put("page_details", pageDetails);
         }
         catch(Exception e) {
             e.printStackTrace();
