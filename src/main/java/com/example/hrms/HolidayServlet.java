@@ -91,7 +91,7 @@ public class HolidayServlet extends HttpServlet {
             // * id is auto generated
             holiday.setId(null);
             if(Date.valueOf(holiday.getToDate()).before(Date.valueOf(holiday.getFromDate()))){
-                res = JsonUtils.formatJSONObject("added", false, "error adding holiday : to_date is before from_date", "holiday", null);
+                res = JsonUtils.formatJSONObject("added", false, "error adding holiday : to_date should be greater than from_date", "holiday", null);
                 response.getWriter().write(res.toString());
                 return;
             }
@@ -115,22 +115,17 @@ public class HolidayServlet extends HttpServlet {
         holiday.setId(null);
         String path = request.getPathInfo();
 
-        if(path == null || path.isEmpty() || path.equals("/")){
-            res = JsonUtils.formatJSONObject("updated", false, "error updating holiday : no id specified in uri", "holiday", null);
-            response.getWriter().write(res.toString());
-            return;
-        }
         try{
             holiday.setId(new BigDecimal(path.split("/")[1]));
         }
         catch (Exception e){
-            res = JsonUtils.formatJSONObject("updated", false, "error updating holiday : invalid id specified in uri", "holiday", null);
+            res = JsonUtils.formatJSONObject("updated", false, "id is required as number", "holiday", null);
             response.getWriter().write(res.toString());
             return;
         }
 
         if(Date.valueOf(holiday.getToDate()).before(Date.valueOf(holiday.getFromDate()))){
-            res = JsonUtils.formatJSONObject("updated", false, "error updating holiday : to_date is before from_date", "holiday", null);
+            res = JsonUtils.formatJSONObject("updated", false, "error updating holiday : to_date should be greater than from_date", "holiday", null);
             response.getWriter().write(res.toString());
             return;
         }
@@ -143,18 +138,12 @@ public class HolidayServlet extends HttpServlet {
         JsonUtils.prepareResponse(response);
         JSONObject res = null;
 
-        String path = request.getPathInfo();
-        if(path == null || path.isEmpty() || path.equals("/")){
-            res = JsonUtils.formatJSONObject("deleted", false, "error deleting holiday : no id specified in uri", "holiday", null);
-            response.getWriter().write(res.toString());
-            return;
-        }
         BigDecimal id;
         try{
             id = new BigDecimal(request.getPathInfo().split("/")[1]);
         }
         catch (Exception e){
-            res = JsonUtils.formatJSONObject("deleted", false, "error deleting holiday : invalid id specified in uri", "holiday", null);
+            res = JsonUtils.formatJSONObject("deleted", false, "id is required as number", "holiday", null);
             response.getWriter().write(res.toString());
             return;
         }

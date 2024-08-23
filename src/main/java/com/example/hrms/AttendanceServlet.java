@@ -228,7 +228,7 @@ public class AttendanceServlet extends HttpServlet {
 
         Attendance attendance = AttendanceModel.getAttendance(id, date);
         if (attendance == null) {
-            res = JsonUtils.formatJSONObject("retrieved", false, "error retrieving attendance", "attendance", JSONObject.NULL);
+            res = JsonUtils.formatJSONObject("retrieved", false, "error retrieving attendance : no record found", "attendance", JSONObject.NULL);
             response.getWriter().write(res.toString());
             return;
         }
