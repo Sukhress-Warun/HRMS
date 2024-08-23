@@ -98,6 +98,7 @@ public class HolidayServlet extends HttpServlet {
         JSONObject res = null;
 
         Holiday holiday = gson.fromJson(request.getReader(), Holiday.class);
+        holiday.setId(null);
         String path = request.getPathInfo();
 
         if(path == null || path.isEmpty() || path.equals("/")){

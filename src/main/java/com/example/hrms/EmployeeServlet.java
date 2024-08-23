@@ -23,8 +23,6 @@ public class EmployeeServlet extends HttpServlet {
 
 //      TODO : search , pagination via params
 
-//        String value = request.getParameter("name")
-
         JsonUtils.prepareResponse(response);
         JSONObject res;
 
@@ -79,6 +77,7 @@ public class EmployeeServlet extends HttpServlet {
         JSONObject res = null;
 
         Employee employee = gson.fromJson(request.getReader(), Employee.class);
+        employee.setId(null);
         String path = request.getPathInfo();
 
         if(path == null || path.isEmpty() || path.equals("/")){

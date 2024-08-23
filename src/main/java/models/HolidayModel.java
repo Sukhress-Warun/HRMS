@@ -84,7 +84,11 @@ public class HolidayModel{
             st.setDate(2, Date.valueOf(holiday.getToDate()));
             st.setString(3, holiday.getDescription());
             st.setBigDecimal(4, holiday.getId());
-            st.executeUpdate();
+            int updated = st.executeUpdate();
+            if(updated != 1){
+                res = JsonUtils.formatJSONObject("updated", false, "id doesnt exist", "holiday", null);
+                return res;
+            }
             res = JsonUtils.formatJSONObject("updated", true, "holiday updated", "holiday", new JSONObject(gson.toJson(holiday)));
             return res;
         }

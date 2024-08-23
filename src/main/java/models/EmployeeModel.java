@@ -88,7 +88,10 @@ public class EmployeeModel {
             st.setBigDecimal(7, employee.getDeptId());
             st.setInt(8, employee.getLeaveAvailable());
             st.setBigDecimal(9, employee.getId());
-            st.executeUpdate();
+            int updated = st.executeUpdate();
+            if(updated == 0){
+                return null;
+            }
             res = new JSONObject(gson.toJson(employee));
             return res;
         } catch (Exception e) {
