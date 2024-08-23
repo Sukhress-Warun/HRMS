@@ -19,36 +19,25 @@ public class EmployeeServlet extends HttpServlet {
 
     static Gson gson = new GsonBuilder().serializeNulls().create();
 
-    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-//      TODO : search , pagination via params
+        try {
+            String path = request.getPathInfo();
 
-        JsonUtils.prepareResponse(response);
-        JSONObject res;
-
-        String path = request.getPathInfo();
-        if(path == null || path.isEmpty() || path.equals("/")){
-            // get all employees
-            JSONArray jsArr = EmployeeModel.getAllEmployees();
-            if(jsArr == null){
-                res = JsonUtils.formatJSONObject("retrieved", false, "error retrieving employees", "employees", null);
-            }
-            else {
-                res = JsonUtils.formatJSONObject("retrieved", (!jsArr.isEmpty()), (!jsArr.isEmpty()) ? "success" : "no employees exist", "employees", jsArr);
+            if (path == null || path.isEmpty() || path.equals("/")) {
+                getAllEmployees(request, response);
+            } else if (path.split("/")[1].equals("higher")) {
+                getHigherEmployees(request, response);
+            } else {
+                getEmployeeById(request, response);
             }
         }
-        else {
-            // get single employee
-            res = EmployeeModel.getEmployeeById(request.getPathInfo().split("/")[1]);
-            if(res == null){
-                res = JsonUtils.formatJSONObject("retrieved", false, "error retrieving employee", "employee", null);
-            }
-            else {
-                res = JsonUtils.formatJSONObject("retrieved", (!res.isEmpty()), (!res.isEmpty()) ? "success" : "employee id doesnt exist", "employee", (!res.isEmpty()) ? res : null);
-            }
+        catch (Exception e) {
+            e.printStackTrace();
+            JsonUtils.prepareResponse(response);
+            JSONObject res = JsonUtils.formatJSONObject("retrieved", false, "error occurred", null, null);
+            response.getWriter().write(res.toString());
         }
-        response.getWriter().write(res.toString());
-
     }
 
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -132,6 +121,69 @@ public class EmployeeServlet extends HttpServlet {
         }
         else {
             res = JsonUtils.formatJSONObject("deleted", (deleted > 0), (deleted > 0) ? "success" : "id doesnt exist", "id", (deleted > 0) ? id : null);
+        }
+
+        response.getWriter().write(res.toString());
+
+    }
+
+    public void getAllEmployees(HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+        //      TODO : search , pagination via params
+
+        JsonUtils.prepareResponse(response);
+        JSONObject res;
+
+        // get all employees
+        JSONArray jsArr = EmployeeModel.getAllEmployees();
+        if(jsArr == null){
+            res = JsonUtils.formatJSONObject("retrieved", false, "error retrieving employees", "employees", null);
+        }
+        else {
+            res = JsonUtils.formatJSONObject("retrieved", (!jsArr.isEmpty()), (!jsArr.isEmpty()) ? "success" : "no employees exist", "employees", jsArr);
+        }
+
+        response.getWriter().write(res.toString());
+
+    }
+
+    public void getEmployeeById(HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+        JsonUtils.prepareResponse(response);
+        JSONObject res;
+
+        // get single employee
+        res = EmployeeModel.getEmployeeById(request.getPathInfo().split("/")[1]);
+        if (res == null) {
+            res = JsonUtils.formatJSONObject("retrieved", false, "error retrieving employee", "employee", null);
+        } else {
+            res = JsonUtils.formatJSONObject("retrieved", (!res.isEmpty()), (!res.isEmpty()) ? "success" : "employee id doesnt exist", "employee", (!res.isEmpty()) ? res : null);
+        }
+
+        response.getWriter().write(res.toString());
+    }
+
+    public void getHigherEmployees(HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+        JsonUtils.prepareResponse(response);
+        JSONObject res;
+
+        BigDecimal id;
+        try{
+            id = new BigDecimal(request.getParameter("id"));
+        }
+        catch (Exception e){
+            res = JsonUtils.formatJSONObject("retrieved", false, "invalid employee id", "higher", null);
+            response.getWriter().write(res.toString());
+            return;
+        }
+
+        JSONArray highers = EmployeeModel.getReportingToEmployees(id);
+        if(highers == null){
+            res = JsonUtils.formatJSONObject("retrieved", false, "error retrieving highers", "higher", null);
+        }
+        else {
+            res = JsonUtils.formatJSONObject("retrieved", (!highers.isEmpty()), (!highers.isEmpty()) ? "success" : "no highers exist", "higher", highers);
         }
 
         response.getWriter().write(res.toString());

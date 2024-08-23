@@ -113,4 +113,25 @@ public class EmployeeModel {
             return null;
         }
     }
+
+    public static JSONArray getReportingToEmployees(BigDecimal id){
+        Connection con = null;
+        try {
+            con = DatabaseConnection.initializeDatabase();
+            PreparedStatement st = con.prepareStatement("with recursive ascendants as( \n" +
+                    "select 0 as lvl, employee.* from employee where id = ?\n" +
+                    "union all \n" +
+                    "select lvl+1,employee.* from ascendants join employee on ascendants.reporting_to = employee.id \n" +
+            ") \n"+
+            "select * from ascendants order by lvl;");
+            st.setBigDecimal(1, id);
+            ResultSet rs = st.executeQuery();
+            return JsonUtils.convertResultSetToJSONArray(rs);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 }
