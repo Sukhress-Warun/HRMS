@@ -21,33 +21,47 @@ public class HolidayModel{
 
     static Gson gson = new GsonBuilder().serializeNulls().create();
 
-    public static JSONArray getAllHolidays() {
+    public static JSONObject getAllHolidays(int perPage, int page, String sortCol, String sortOrder, String searchDescription) {
+
         Connection con = null;
-        try{
+        try {
             con = DatabaseConnection.initializeDatabase();
-            ResultSet rs = con.createStatement().executeQuery("select * from holiday");
-            return JsonUtils.convertResultSetToJSONArray(rs);
-        }
-        catch(Exception e) {
+            PreparedStatement st = con.prepareStatement("select * from holiday where description like ? order by " + sortCol + " " + sortOrder + " limit ? offset ?");
+            st.setString(1, "%" + searchDescription + "%");
+            st.setInt(2, perPage);
+            st.setInt(3, (page - 1) * perPage);
+            ResultSet rs = st.executeQuery();
+            JSONArray jsArr = JsonUtils.convertResultSetToJSONArray(rs);
+            JSONObject pageDetails = new JSONObject();
+            pageDetails.put("per_page", perPage);
+            pageDetails.put("page", page);
+            pageDetails.put("search_description", searchDescription);
+            pageDetails.put("sort_column", sortCol);
+            pageDetails.put("sort_order", sortOrder);
+
+            return JsonUtils.formatJSONObject("retrieved", (!jsArr.isEmpty()), (!jsArr.isEmpty()) ? "success" : "no holidays exist", "holidays", jsArr).put("page_details", pageDetails);
+
+        } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            return JsonUtils.formatJSONObject("retrieved", false, "error retrieving holidays", "holidays", null);
         }
     }
 
     public static JSONObject getHolidayById(BigDecimal id) {
         Connection con = null;
-        JSONObject res = null;
         try{
             con = DatabaseConnection.initializeDatabase();
             PreparedStatement st = con.prepareStatement("select * from holiday where id=?");
             st.setBigDecimal(1, id);
             ResultSet rs = st.executeQuery();
             JSONArray jsArr = JsonUtils.convertResultSetToJSONArray(rs);
-            return jsArr.optJSONObject(0, new JSONObject());
+            JSONObject jsObj = jsArr.optJSONObject(0, new JSONObject());
+            return JsonUtils.formatJSONObject("retrieved", (!jsObj.isEmpty()), (!jsObj.isEmpty()) ? "success" : "holiday id doesnt exist", "holiday", (!jsObj.isEmpty()) ? jsObj : null);
+
         }
         catch (Exception e){
             e.printStackTrace();
-            return null;
+            return JsonUtils.formatJSONObject("retrieved", false, "error retrieving holiday", "holiday", null);
         }
     }
 

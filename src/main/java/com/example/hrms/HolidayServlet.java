@@ -3,6 +3,9 @@ package com.example.hrms;
 import java.io.*;
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import javax.servlet.http.*;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -34,13 +37,30 @@ public class HolidayServlet extends HttpServlet {
         String path = request.getPathInfo();
         if(path == null || path.isEmpty() || path.equals("/")){
             // get all holidays
-            JSONArray jsArr = HolidayModel.getAllHolidays();
-            if(jsArr == null){
-                res = JsonUtils.formatJSONObject("retrieved", false, "error retrieving holidays", "holidays", null);
+
+            String searchDescription = request.getParameter("search_description") != null ? request.getParameter("search_description") : "";
+            int perPage = 10;
+            int page = 1;
+            try {
+                perPage = Integer.parseInt(request.getParameter("per_page"));
+                page = Integer.parseInt(request.getParameter("page"));
             }
-            else {
-                res = JsonUtils.formatJSONObject("retrieved", (!jsArr.isEmpty()), (!jsArr.isEmpty()) ? "success" : "no holidays exist", "holidays", jsArr);
+            catch (NumberFormatException e) {}
+
+            String sortCol = request.getParameter("sort_column") != null ? request.getParameter("sort_column") : "from_date";
+            String sortOrder = request.getParameter("sort_order") != null ? request.getParameter("sort_order") : "asc";
+
+            Set<String> validColumns = new HashSet<>(Arrays.asList("from_date", "to_date", "description"));
+            if(!validColumns.contains(sortCol)){
+                sortCol = "from_date";
             }
+            if(!sortOrder.equals("asc") && !sortOrder.equals("desc")){
+                sortOrder = "asc";
+            }
+
+            res = HolidayModel.getAllHolidays(perPage, page, sortCol, sortOrder, searchDescription);
+            response.getWriter().write(res.toString());
+            return;
         }
         else {
             BigDecimal id;
@@ -55,15 +75,9 @@ public class HolidayServlet extends HttpServlet {
 
             // get single holiday
             res = HolidayModel.getHolidayById(id);
-            if(res == null){
-                res = JsonUtils.formatJSONObject("retrieved", false, "error retrieving holiday", "holiday", null);
-            }
-            else {
-                res = JsonUtils.formatJSONObject("retrieved", (!res.isEmpty()), (!res.isEmpty()) ? "success" : "holiday id doesnt exist", "holiday", (!res.isEmpty()) ? res : null);
-            }
-
+            response.getWriter().write(res.toString());
+            return;
         }
-        response.getWriter().write(res.toString());
 
     }
 
