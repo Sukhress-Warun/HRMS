@@ -128,7 +128,7 @@ public class HolidayModel{
         try{
             con = DatabaseConnection.initializeDatabase();
             // overlapping range find in holidays
-            PreparedStatement st = con.prepareStatement("select * from holiday where (from_date between ? and ?) or (to_date between ? and ?) or (from_date <= ? and to_date >= ?)");
+            PreparedStatement st = con.prepareStatement("select * from holiday where (from_date between ? and ?) or (to_date between ? and ?) or (from_date <= ? and to_date >= ?) order by from_date");
             st.setDate(1, Date.valueOf(fromDate));
             st.setDate(2, Date.valueOf(toDate));
             st.setDate(3, Date.valueOf(fromDate));
