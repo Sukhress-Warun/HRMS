@@ -2,6 +2,8 @@ package models;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.json.*;
 import com.google.gson.*;
@@ -70,6 +72,11 @@ public class AttendanceModel {
 
     public static JSONObject checkIn(BigDecimal employeeId, String date, String time){
 
+        JSONObject holiday = HolidayModel.getHolidayOnDate(date);
+        if(holiday != null){
+            return JsonUtils.formatJSONObject("checked-in", false, "holiday on this date", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL)).put("holiday", holiday);
+        }
+
         Attendance attendance ;
         try{
             attendance = getAttendance(employeeId, date);
@@ -86,15 +93,11 @@ public class AttendanceModel {
             }
         }
         else if(attendance.getAppliedLeave()){
-            boolean cancelled = cancelLeave(attendance.getId(), employeeId);
-            if(!cancelled){
-                return JsonUtils.formatJSONObject("checked-in", false, "error cancelling leave", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
-            }
-            attendance.setAppliedLeave(false);
+            return JsonUtils.formatJSONObject("checked-in", false, "can't check-in after applying leave", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
         }
 
         JSONObject status = getStatus(attendance.getId(), false);
-        // ! getStatus can return null if error, so we should reset the database to the previous state if error occurs
+//         ! getStatus can return null if error, so we should reset the database to the previous state if error occurs
         if(status.getString("current_status").equals("checked-in")){
             return JsonUtils.formatJSONObject("checked-in", false, "already checked-in", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL))
                     .put("info", status);
@@ -185,25 +188,51 @@ public class AttendanceModel {
         }
     }
 
-    public static boolean cancelLeave(BigDecimal attendanceId, BigDecimal employeeId){
+    public static JSONObject cancelLeave(BigDecimal employeeId, String date){
+        JSONObject res;
+        Attendance attendance = null;
+        try{
+            attendance = AttendanceModel.getAttendance(employeeId, date);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            res = JsonUtils.formatJSONObject("cancelled-leave", false, "error cancelling leave : error retrieving attendance", "date", JSONObject.NULL);
+            return res;
+        }
+
+        if (attendance == null) {
+            res = JsonUtils.formatJSONObject("cancelled-leave", false, "error cancelling leave : no record found", "date", JSONObject.NULL);
+            return res;
+        }
+        else if (!attendance.getAppliedLeave()) {
+            res = JsonUtils.formatJSONObject("cancelled-leave", false, "error cancelling leave : leave not applied", "date", JSONObject.NULL);
+            return res;
+        }
+
         Connection con = null;
         try{
             con = DatabaseConnection.initializeDatabase();
             PreparedStatement st = con.prepareStatement("update attendance set applied_leave=false where id=?");
-            st.setBigDecimal(1, attendanceId);
+            st.setBigDecimal(1, attendance.getId());
             st.executeUpdate();
             PreparedStatement st2 = con.prepareStatement("update employee set leave_available=leave_available+1 where id=?");
             st2.setBigDecimal(1, employeeId);
             st2.executeUpdate();
-            return true;
+            return JsonUtils.formatJSONObject("cancelled-leave", true, "success", "date", date);
         }
         catch (Exception e){
             e.printStackTrace();
-            return false;
+            return JsonUtils.formatJSONObject("cancelled-leave", false, "error cancelling leave", "date", JSONObject.NULL);
         }
     }
 
     public static JSONObject applyLeave(BigDecimal employeeId, String date){
+
+        // check for holiday
+        JSONObject holiday = HolidayModel.getHolidayOnDate(date);
+        if(holiday != null){
+            return JsonUtils.formatJSONObject("applied-leave", false, "holiday on this date", "date", date).put("holiday", holiday);
+        }
 
         Attendance attendance;
         try{
@@ -213,6 +242,7 @@ public class AttendanceModel {
             e.printStackTrace();
             return JsonUtils.formatJSONObject("applied-leave", false, "error retrieving attendance", "date", JSONObject.NULL);
         }
+
 
         if(attendance == null){
             attendance = addAttendance(employeeId, date, null, false);
@@ -278,7 +308,7 @@ public class AttendanceModel {
         }
     }
 
-    public static JSONArray getAttendanceBetweenDates(BigDecimal employeeId, String fromDate, String toDate) {
+    public static List<Attendance> getAttendanceBetweenDates(BigDecimal employeeId, String fromDate, String toDate) {
         Connection con = null;
         try {
             con = DatabaseConnection.initializeDatabase();
@@ -287,7 +317,21 @@ public class AttendanceModel {
             st.setDate(2, Date.valueOf(fromDate));
             st.setDate(3, Date.valueOf(toDate));
             ResultSet rs = st.executeQuery();
-            return JsonUtils.convertResultSetToJSONArray(rs);
+            List<Attendance> attendanceList = new ArrayList<>();
+            for(; rs.next(); ){
+                Attendance attendance = new Attendance();
+                attendance.setId(rs.getBigDecimal("id"));
+                attendance.setDate(rs.getDate("date").toString());
+                attendance.setEmployeeId(rs.getBigDecimal("employee_id"));
+                attendance.setWorkedTime(rs.getTime("worked_time").toString());
+                attendance.setAppliedLeave(rs.getBoolean("applied_leave"));
+                Time fct = rs.getTime("first_check_in");
+                attendance.setFirstCheckIn((fct != null) ? fct.toString() : null);
+                Time lco = rs.getTime("last_check_out");
+                attendance.setLastCheckOut((lco != null) ? lco.toString() : null);
+                attendanceList.add(attendance);
+            }
+            return attendanceList;
         } catch (Exception e) {
             e.printStackTrace();
             return null;

@@ -30,6 +30,9 @@ public class Attendance {
     @SerializedName("last_check_out")
     private String lastCheckOut;
 
+    public Attendance() {
+    }
+
     public Attendance(BigDecimal id, String date, BigDecimal employeeId, String workedTime, boolean appliedLeave, String firstCheckIn, String lastCheckOut) {
         this.id = id;
         this.date = date;

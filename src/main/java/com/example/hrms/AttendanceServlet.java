@@ -6,6 +6,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import javax.servlet.annotation.*;
@@ -52,6 +53,10 @@ public class AttendanceServlet extends HttpServlet {
                 return;
             } else if (path.equals("/apply-leave")) {
                 applyLeave(request, response);
+                return;
+            }
+            else if (path.equals("/cancel-leave")) {
+                cancelLeave(request, response);
                 return;
             }
         }
@@ -120,7 +125,6 @@ public class AttendanceServlet extends HttpServlet {
         res = AttendanceModel.checkIn(id, date, time);
         if(res == null){
             res = JsonUtils.formatJSONObject("checked-in", false, "error checking in", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
-            return;
         }
         response.getWriter().write(res.toString());
 
@@ -163,7 +167,6 @@ public class AttendanceServlet extends HttpServlet {
         res = AttendanceModel.checkOut(id, date, time);
         if(res == null){
             res = JsonUtils.formatJSONObject("checked-out", false, "error checking out", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
-            return;
         }
         response.getWriter().write(res.toString());
 
@@ -194,12 +197,37 @@ public class AttendanceServlet extends HttpServlet {
 //        String date = new SimpleDateFormat("yyyy-MM-dd").format(Calendar.getInstance().getTime());
 
         res = AttendanceModel.applyLeave(id, date);
-        if(res == null){
-            res = JsonUtils.formatJSONObject("applied-leave", false, "error applying leave", "date", JSONObject.NULL);
-            return;
-        }
         response.getWriter().write(res.toString());
 
+    }
+
+    public static void cancelLeave(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+        JsonUtils.prepareResponse(response);
+        JSONObject res;
+
+        JSONObject data = JsonUtils.getRequestJSONObject(request);
+        BigDecimal id;
+
+        id = data.optBigDecimal("id", null);
+        if (id == null) {
+            res = JsonUtils.formatJSONObject("cancelled_leave", false, "id is required as a Number", "date", JSONObject.NULL);
+            response.getWriter().write(res.toString());
+            return;
+        }
+
+        String date = data.optString("date", null);
+        if (date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            res = JsonUtils.formatJSONObject("cancelled-leave", false, (date != null) ? "date format is invalid" : "date is required", "date", JSONObject.NULL);
+            response.getWriter().write(res.toString());
+            return;
+        }
+        date = Date.valueOf(date).toString();
+//        String date = new SimpleDateFormat("yyyy-MM-dd").format(Calendar.getInstance().getTime());
+
+
+        res = AttendanceModel.cancelLeave(id, date);
+        response.getWriter().write(res.toString());
     }
 
     public static void status(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -280,12 +308,12 @@ public class AttendanceServlet extends HttpServlet {
         toDate = Date.valueOf(toDate).toString();
 
         if(Date.valueOf(toDate).before(Date.valueOf(fromDate))){
-            res = JsonUtils.formatJSONObject("retrieved", false, "to_date is before from_date", "calendar", new JSONArray());
+            res = JsonUtils.formatJSONObject("retrieved", false, "to_date should be greater than from_date", "calendar", new JSONArray());
             response.getWriter().write(res.toString());
             return;
         }
 
-        JSONArray attendance = AttendanceModel.getAttendanceBetweenDates(id, fromDate, toDate);
+        List<Attendance> attendanceList = AttendanceModel.getAttendanceBetweenDates(id, fromDate, toDate);
         JSONArray holidays = HolidayModel.getHolidaysBetweenDates(fromDate, toDate);
         JSONArray calendar = new JSONArray();
 
@@ -299,11 +327,11 @@ public class AttendanceServlet extends HttpServlet {
             cal.setTime(date);
             day.put("day", week[cal.get(Calendar.DAY_OF_WEEK) - 1]);
             String type = null;
-            for(int i = 0; i < attendance.length(); i++){
-                JSONObject att = attendance.getJSONObject(i);
-                if(Date.valueOf(att.getString("date")).equals(date)){
-                    type = (att.getBoolean("applied_leave")) ? "leave" : "present";
-                    day.put("attendance", att);
+            for(int i = 0; i < attendanceList.size(); i++){
+                Attendance att = attendanceList.get(i);
+                if(Date.valueOf(att.getDate()).equals(date) && !Time.valueOf(att.getWorkedTime()).equals(Time.valueOf("00:00:00"))){
+                    type = (att.getAppliedLeave()) ? "leave" : "present";
+                    day.put("attendance", new JSONObject(gson.toJson(att)));
                     break;
                 }
             }

@@ -157,4 +157,22 @@ public class HolidayModel{
             return null;
         }
     }
+
+    public static JSONObject getHolidayOnDate(String date) {
+        Connection con = null;
+        try{
+            con = DatabaseConnection.initializeDatabase();
+            PreparedStatement st = con.prepareStatement("select * from holiday where ? between from_date and to_date");
+            st.setDate(1, Date.valueOf(date));
+            ResultSet rs = st.executeQuery();
+            JSONArray jsArr = JsonUtils.convertResultSetToJSONArray(rs);
+            return jsArr.optJSONObject(0, null);
+
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 }
