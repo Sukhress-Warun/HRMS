@@ -3,4 +3,32 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
          version="4.0">
+    <filter-mapping>
+        <filter-name>ParseRequestBodyFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>PrepareResponseFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>RequiredRequestBodyFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>AttendanceFilter</filter-name>
+        <url-pattern>/attendance/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>ValidateDateFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>ValidateRequestIdFilter</filter-name>
+        <url-pattern>/attendance/check-in</url-pattern>
+        <url-pattern>/attendance/check-out</url-pattern>
+        <url-pattern>/attendance/apply-leave</url-pattern>
+        <url-pattern>/attendance/cancel-leave</url-pattern>
+    </filter-mapping>
+
 </web-app>

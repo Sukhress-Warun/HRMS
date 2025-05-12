@@ -31,7 +31,7 @@ public class HolidayModel{
             st.setInt(2, perPage);
             st.setInt(3, (page - 1) * perPage);
             ResultSet rs = st.executeQuery();
-            JSONArray jsArr = JsonUtils.convertResultSetToJSONArray(rs);
+            JSONArray holidays = JsonUtils.convertResultSetToJSONArray(rs);
             JSONObject pageDetails = new JSONObject();
             pageDetails.put("per_page", perPage);
             pageDetails.put("page", page);
@@ -39,11 +39,11 @@ public class HolidayModel{
             pageDetails.put("sort_column", sortCol);
             pageDetails.put("sort_order", sortOrder);
 
-            return JsonUtils.formatJSONObject("retrieved", (!jsArr.isEmpty()), (!jsArr.isEmpty()) ? "success" : "no holidays exist", "holidays", jsArr).put("page_details", pageDetails);
+            return JsonUtils.buildResponse("retrieved", (!holidays.isEmpty()), (!holidays.isEmpty()) ? "success" : "no holidays exist", "holidays", holidays).put("page_details", pageDetails);
 
         } catch (Exception e) {
             e.printStackTrace();
-            return JsonUtils.formatJSONObject("retrieved", false, "error retrieving holidays", "holidays", null);
+            return JsonUtils.buildResponse("retrieved", false, "error retrieving holidays", "holidays", null);
         }
     }
 
@@ -56,12 +56,12 @@ public class HolidayModel{
             ResultSet rs = st.executeQuery();
             JSONArray jsArr = JsonUtils.convertResultSetToJSONArray(rs);
             JSONObject jsObj = jsArr.optJSONObject(0, new JSONObject());
-            return JsonUtils.formatJSONObject("retrieved", (!jsObj.isEmpty()), (!jsObj.isEmpty()) ? "success" : "holiday id doesnt exist", "holiday", (!jsObj.isEmpty()) ? jsObj : null);
+            return JsonUtils.buildResponse("retrieved", (!jsObj.isEmpty()), (!jsObj.isEmpty()) ? "success" : "holiday id doesnt exist", "holiday", (!jsObj.isEmpty()) ? jsObj : null);
 
         }
         catch (Exception e){
             e.printStackTrace();
-            return JsonUtils.formatJSONObject("retrieved", false, "error retrieving holiday", "holiday", null);
+            return JsonUtils.buildResponse("retrieved", false, "error retrieving holiday", "holiday", null);
         }
     }
 
@@ -79,7 +79,7 @@ public class HolidayModel{
             rs.next();
             BigDecimal id = rs.getBigDecimal(1);
             holiday.setId(id);
-            res = JsonUtils.formatJSONObject("added", true, "holiday added", "holiday", new JSONObject(gson.toJson(holiday)));
+            res = JsonUtils.buildResponse("added", true, "holiday added", "holiday", new JSONObject(gson.toJson(holiday)));
             return res;
         }
         catch (Exception e){
@@ -100,15 +100,15 @@ public class HolidayModel{
             st.setBigDecimal(4, holiday.getId());
             int updated = st.executeUpdate();
             if(updated != 1){
-                res = JsonUtils.formatJSONObject("updated", false, "id doesnt exist", "holiday", null);
+                res = JsonUtils.buildResponse("updated", false, "id doesnt exist", "holiday", null);
                 return res;
             }
-            res = JsonUtils.formatJSONObject("updated", true, "holiday updated", "holiday", new JSONObject(gson.toJson(holiday)));
+            res = JsonUtils.buildResponse("updated", true, "holiday updated", "holiday", new JSONObject(gson.toJson(holiday)));
             return res;
         }
         catch (Exception e){
             e.printStackTrace();
-            res = JsonUtils.formatJSONObject("updated", false, "error updating holiday", "holiday", null);
+            res = JsonUtils.buildResponse("updated", false, "error updating holiday", "holiday", null);
             return res;
         }
     }
@@ -122,17 +122,17 @@ public class HolidayModel{
             st.setBigDecimal(1, id);
             int status = st.executeUpdate();
             if(status == 1){
-                res = JsonUtils.formatJSONObject("deleted", true, "holiday deleted", null, null);
+                res = JsonUtils.buildResponse("deleted", true, "holiday deleted", null, null);
                 return res;
             }
             else{
-                res = JsonUtils.formatJSONObject("deleted", false, "id doesnt exist", null, null);
+                res = JsonUtils.buildResponse("deleted", false, "id doesnt exist", null, null);
                 return res;
             }
         }
         catch (Exception e){
             e.printStackTrace();
-            res = JsonUtils.formatJSONObject("deleted", false, "error deleting holiday", null, null);
+            res = JsonUtils.buildResponse("deleted", false, "error deleting holiday", null, null);
             return res;
         }
     }

@@ -34,19 +34,20 @@ public class AttendanceModel {
 
     static Gson gson = new GsonBuilder().serializeNulls().create();
 
-    public static Attendance getAttendance(BigDecimal employeeId, String date) throws Exception {
+    public static Attendance getAttendance(BigDecimal employeeId, String date) {
         Connection con = null;
-        con = DatabaseConnection.initializeDatabase();
-        PreparedStatement st = con.prepareStatement("select * from attendance where employee_id=? and date=?");
-        st.setBigDecimal(1, employeeId);
-        st.setDate(2, Date.valueOf(date));
-        ResultSet rs = st.executeQuery();
-        JSONArray jsArr = JsonUtils.convertResultSetToJSONArray(rs);
-        JSONObject jsObj = jsArr.optJSONObject(0, null);
-        if(jsObj == null){
+        try {
+            con = DatabaseConnection.initializeDatabase();
+            PreparedStatement st = con.prepareStatement("select * from attendance where employee_id=? and date=?");
+            st.setBigDecimal(1, employeeId);
+            st.setDate(2, Date.valueOf(date));
+            ResultSet rs = st.executeQuery();
+            JSONObject attendance = JsonUtils.convertResultSetToJSONArray(rs).optJSONObject(0, null);
+            return gson.fromJson(attendance.toString(), Attendance.class);
+        } catch (Exception e) {
+            e.printStackTrace();
             return null;
         }
-        return gson.fromJson(jsObj.toString(), Attendance.class);
 
     }
 
@@ -74,7 +75,7 @@ public class AttendanceModel {
 
         JSONObject holiday = HolidayModel.getHolidayOnDate(date);
         if(holiday != null){
-            return JsonUtils.formatJSONObject("checked-in", false, "holiday on this date", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL)).put("holiday", holiday);
+            return JsonUtils.buildResponse("checked-in", false, "holiday on this date", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL)).put("holiday", holiday);
         }
 
         Attendance attendance ;
@@ -83,30 +84,30 @@ public class AttendanceModel {
         }
         catch (Exception e){
             e.printStackTrace();
-            return JsonUtils.formatJSONObject("checked-in", false, "error retrieving attendance", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            return JsonUtils.buildResponse("checked-in", false, "error retrieving attendance", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
         }
 
         if(attendance == null){
             attendance = addAttendance(employeeId, date, null, false);
             if (attendance == null){
-                return JsonUtils.formatJSONObject("checked-in", false, "error adding attendance", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+                return JsonUtils.buildResponse("checked-in", false, "error adding attendance", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
             }
         }
         else if(attendance.getAppliedLeave()){
-            return JsonUtils.formatJSONObject("checked-in", false, "can't check-in after applying leave", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            return JsonUtils.buildResponse("checked-in", false, "can't check-in after applying leave", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
         }
 
         JSONObject status = getStatus(attendance.getId(), false);
 //         ! getStatus can return null if error, so we should reset the database to the previous state if error occurs
         if(status.getString("current_status").equals("checked-in")){
-            return JsonUtils.formatJSONObject("checked-in", false, "already checked-in", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL))
+            return JsonUtils.buildResponse("checked-in", false, "already checked-in", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL))
                     .put("info", status);
         }
         // check time greater than previous checkout
         if(status.get("last_check_out") != JSONObject.NULL){ // null if status is fresh
             String lastCheckOut = status.getString("last_check_out");
             if(Time.valueOf(time).before(Time.valueOf(lastCheckOut)) || Time.valueOf(time).equals(Time.valueOf(lastCheckOut))){
-                return JsonUtils.formatJSONObject("checked-in", false, "check-in time should be greater than last check-out", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL))
+                return JsonUtils.buildResponse("checked-in", false, "check-in time should be greater than last check-out", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL))
                         .put("info", status);
             }
         }
@@ -123,7 +124,7 @@ public class AttendanceModel {
                 st2.setBigDecimal(2, attendance.getId());
                 st2.executeUpdate();
             }
-            return JsonUtils.formatJSONObject("checked-in", true, "success", "log", new JSONObject().put("date", date).put("time", time));
+            return JsonUtils.buildResponse("checked-in", true, "success", "log", new JSONObject().put("date", date).put("time", time));
         }
         catch (Exception e){
             e.printStackTrace();
@@ -139,32 +140,32 @@ public class AttendanceModel {
             attendance = getAttendance(employeeId, date);
         } catch (Exception e) {
             e.printStackTrace();
-            return JsonUtils.formatJSONObject("checked-out", false, "error retrieving attendance", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            return JsonUtils.buildResponse("checked-out", false, "error retrieving attendance", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
         }
 
         if (attendance == null) {
-            return JsonUtils.formatJSONObject("checked-out", false, "no attendance record found", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            return JsonUtils.buildResponse("checked-out", false, "no attendance record found", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
         }
         else if(attendance.getAppliedLeave()){
-            return JsonUtils.formatJSONObject("checked-out", false, "leave applied and no check in found", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            return JsonUtils.buildResponse("checked-out", false, "leave applied and no check in found", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
         }
 
         JSONObject status = getStatus(attendance.getId(), true);
         if (status == null){
-            return JsonUtils.formatJSONObject("checked-out", false, "error retrieving status", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            return JsonUtils.buildResponse("checked-out", false, "error retrieving status", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
         }
 
         BigDecimal logId = status.getBigDecimal("log_id");
         status.remove("log_id");
 
         if (status.getString("current_status").equals("checked-out")) {
-            return JsonUtils.formatJSONObject("checked-out", false, "already checked-out", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL))
+            return JsonUtils.buildResponse("checked-out", false, "already checked-out", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL))
                     .put("info", status);
         }
         // check time greater than previous check-in
         String lastCheckIn = status.getString("last_check_in");
         if (Time.valueOf(time).before(Time.valueOf(lastCheckIn)) || Time.valueOf(time).equals(Time.valueOf(lastCheckIn))) {
-            return JsonUtils.formatJSONObject("checked-out", false, "check-out time should be greater than last check-in", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL))
+            return JsonUtils.buildResponse("checked-out", false, "check-out time should be greater than last check-in", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL))
                     .put("info", status);
         }
 
@@ -181,10 +182,10 @@ public class AttendanceModel {
             st2.setTime(3, Time.valueOf(lastCheckIn));
             st2.setBigDecimal(4, attendance.getId());
             st2.executeUpdate();
-            return JsonUtils.formatJSONObject("checked-out", true, "success", "log", new JSONObject().put("date", date).put("time", time));
+            return JsonUtils.buildResponse("checked-out", true, "success", "log", new JSONObject().put("date", date).put("time", time));
         } catch (Exception e) {
             e.printStackTrace();
-            return JsonUtils.formatJSONObject("checked-out", false, "error updating log", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            return JsonUtils.buildResponse("checked-out", false, "error updating log", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
         }
     }
 
@@ -196,16 +197,16 @@ public class AttendanceModel {
         }
         catch (Exception e){
             e.printStackTrace();
-            res = JsonUtils.formatJSONObject("cancelled-leave", false, "error cancelling leave : error retrieving attendance", "date", JSONObject.NULL);
+            res = JsonUtils.buildResponse("cancelled-leave", false, "error cancelling leave : error retrieving attendance", "date", JSONObject.NULL);
             return res;
         }
 
         if (attendance == null) {
-            res = JsonUtils.formatJSONObject("cancelled-leave", false, "error cancelling leave : no record found", "date", JSONObject.NULL);
+            res = JsonUtils.buildResponse("cancelled-leave", false, "error cancelling leave : no record found", "date", JSONObject.NULL);
             return res;
         }
         else if (!attendance.getAppliedLeave()) {
-            res = JsonUtils.formatJSONObject("cancelled-leave", false, "error cancelling leave : leave not applied", "date", JSONObject.NULL);
+            res = JsonUtils.buildResponse("cancelled-leave", false, "error cancelling leave : leave not applied", "date", JSONObject.NULL);
             return res;
         }
 
@@ -218,11 +219,11 @@ public class AttendanceModel {
             PreparedStatement st2 = con.prepareStatement("update employee set leave_available=leave_available+1 where id=?");
             st2.setBigDecimal(1, employeeId);
             st2.executeUpdate();
-            return JsonUtils.formatJSONObject("cancelled-leave", true, "success", "date", date);
+            return JsonUtils.buildResponse("cancelled-leave", true, "success", "date", date);
         }
         catch (Exception e){
             e.printStackTrace();
-            return JsonUtils.formatJSONObject("cancelled-leave", false, "error cancelling leave", "date", JSONObject.NULL);
+            return JsonUtils.buildResponse("cancelled-leave", false, "error cancelling leave", "date", JSONObject.NULL);
         }
     }
 
@@ -231,7 +232,7 @@ public class AttendanceModel {
         // check for holiday
         JSONObject holiday = HolidayModel.getHolidayOnDate(date);
         if(holiday != null){
-            return JsonUtils.formatJSONObject("applied-leave", false, "holiday on this date", "date", date).put("holiday", holiday);
+            return JsonUtils.buildResponse("applied-leave", false, "holiday on this date", "date", date).put("holiday", holiday);
         }
 
         Attendance attendance;
@@ -240,26 +241,26 @@ public class AttendanceModel {
         }
         catch (Exception e){
             e.printStackTrace();
-            return JsonUtils.formatJSONObject("applied-leave", false, "error retrieving attendance", "date", JSONObject.NULL);
+            return JsonUtils.buildResponse("applied-leave", false, "error retrieving attendance", "date", JSONObject.NULL);
         }
 
 
         if(attendance == null){
             attendance = addAttendance(employeeId, date, null, false);
             if(attendance == null){
-                return JsonUtils.formatJSONObject("applied-leave", false, "error adding attendance", "date", JSONObject.NULL);
+                return JsonUtils.buildResponse("applied-leave", false, "error adding attendance", "date", JSONObject.NULL);
             }
         }
         else if(attendance.getAppliedLeave()){
-            return JsonUtils.formatJSONObject("applied-leave", false, "leave already applied", "date", date);
+            return JsonUtils.buildResponse("applied-leave", false, "leave already applied", "date", date);
         }
         else if(!attendance.getAppliedLeave()){
             JSONObject status = getStatus(attendance.getId(), false);
             if(status == null){
-                return JsonUtils.formatJSONObject("applied-leave", false, "error retrieving status", "date", date);
+                return JsonUtils.buildResponse("applied-leave", false, "error retrieving status", "date", date);
             }
             if(!status.getString("current_status").equals("fresh")) {
-                return JsonUtils.formatJSONObject("applied-leave", false, "leave cannot be applied after check-in", "date", date);
+                return JsonUtils.buildResponse("applied-leave", false, "leave cannot be applied after check-in", "date", date);
             }
         }
 
@@ -272,7 +273,7 @@ public class AttendanceModel {
             PreparedStatement st2 = con.prepareStatement("update employee set leave_available=leave_available-1 where id=?");
             st2.setBigDecimal(1, employeeId);
             st2.executeUpdate();
-            return JsonUtils.formatJSONObject("applied-leave", true, "success", "date", date);
+            return JsonUtils.buildResponse("applied-leave", true, "success", "date", date);
         }
         catch (Exception e){
             e.printStackTrace();

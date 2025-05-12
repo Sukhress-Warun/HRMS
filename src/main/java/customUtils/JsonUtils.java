@@ -4,6 +4,7 @@ import org.json.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.util.stream.Collectors;
@@ -21,33 +22,29 @@ public class JsonUtils {
         JSONArray jsonArray = new JSONArray();
         while (resultSet.next()) {
             int total_columns = resultSet.getMetaData().getColumnCount();
-            JSONObject obj = new JSONObject();
+            JSONObject row = new JSONObject();
             for (int i = 0; i < total_columns; i++) {
                 Object value = resultSet.getObject(i + 1);
                 if(value instanceof Date){
                     value = ((Date) value).toString();
                 }
-                obj.put(resultSet.getMetaData().getColumnLabel(i + 1).toLowerCase(), (value != null) ? value : JSONObject.NULL);
+                row.put(resultSet.getMetaData().getColumnLabel(i + 1).toLowerCase(), (value != null) ? value : JSONObject.NULL);
             }
-            jsonArray.put(obj);
+            jsonArray.put(row);
         }
         return jsonArray;
     }
 
-    public static JSONObject convertJSONArrayToJSONObject(String key, JSONArray jsonArray){
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put(key,(jsonArray != null) ? jsonArray : JSONObject.NULL);
-        return jsonObject;
-    }
-
-
-    public static JSONObject getRequestJSONObject(HttpServletRequest request) throws Exception{
+    public static JSONObject parseRequestBody(HttpServletRequest request) throws JSONException, IOException {
 
         String test = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+        if(test.isEmpty()){
+            return null;
+        }
         return new JSONObject(test);
     }
 
-    public static JSONObject formatJSONObject(String statusKey, Object statusValue, String message, String key, Object value){
+    public static JSONObject buildResponse(String statusKey, Object statusValue, String message, String key, Object value){
         JSONObject jsonObject = new JSONObject();
         jsonObject.put(statusKey, (statusValue != null) ? statusValue : JSONObject.NULL);
         jsonObject.put("message", (message != null) ? message : JSONObject.NULL);

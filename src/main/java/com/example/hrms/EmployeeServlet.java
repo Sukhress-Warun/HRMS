@@ -3,7 +3,6 @@ package com.example.hrms;
 import java.io.*;
 import java.math.BigDecimal;
 import java.util.*;
-import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import javax.servlet.annotation.*;
 
@@ -35,18 +34,17 @@ public class EmployeeServlet extends HttpServlet {
         }
         catch (Exception e) {
             e.printStackTrace();
-            JsonUtils.prepareResponse(response);
-            JSONObject res = JsonUtils.formatJSONObject("error", true, "error occurred", null, null);
+            JSONObject res = JsonUtils.buildResponse("error", true, "error occurred", null, null);
             response.getWriter().write(res.toString());
         }
     }
 
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        JsonUtils.prepareResponse(response);
+
         JSONObject res = null;
 
-        Employee employee = gson.fromJson(request.getReader(), Employee.class);
+        Employee employee = gson.fromJson(request.getAttribute("requestBody").toString(), Employee.class);
 
         // * id is auto generated
         employee.setId(null);
@@ -59,10 +57,10 @@ public class EmployeeServlet extends HttpServlet {
 
     public void doPut(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        JsonUtils.prepareResponse(response);
+
         JSONObject res = null;
 
-        Employee employee = gson.fromJson(request.getReader(), Employee.class);
+        Employee employee = gson.fromJson(request.getAttribute("requestBody").toString(), Employee.class);
         employee.setId(null);
         String path = request.getPathInfo();
 
@@ -70,7 +68,7 @@ public class EmployeeServlet extends HttpServlet {
             employee.setId(new BigDecimal(path.split("/")[1]));
         }
         catch (Exception e){
-            res = JsonUtils.formatJSONObject("updated", false, "id is required as number", "employee", null);
+            res = JsonUtils.buildResponse("updated", false, "id is required as number", "employee", null);
             response.getWriter().write(res.toString());
             return;
         }
@@ -83,7 +81,7 @@ public class EmployeeServlet extends HttpServlet {
 
     public void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        JsonUtils.prepareResponse(response);
+
         JSONObject res = null;
 
         String path = request.getPathInfo();
@@ -93,7 +91,7 @@ public class EmployeeServlet extends HttpServlet {
             id = new BigDecimal(path.split("/")[1]);
         }
         catch (Exception e){
-            res = JsonUtils.formatJSONObject("deleted", false, "id required as number", "employee", null);
+            res = JsonUtils.buildResponse("deleted", false, "id required as number", "employee", null);
             response.getWriter().write(res.toString());
             return;
         }
@@ -106,7 +104,7 @@ public class EmployeeServlet extends HttpServlet {
 
     public void getAllEmployees(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        JsonUtils.prepareResponse(response);
+
         JSONObject res;
 
         String searchName = request.getParameter("search_name") != null ? request.getParameter("search_name") : "";
@@ -136,7 +134,7 @@ public class EmployeeServlet extends HttpServlet {
 
     public void getEmployeeById(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        JsonUtils.prepareResponse(response);
+
         JSONObject res;
 
         String path = request.getPathInfo();
@@ -146,7 +144,7 @@ public class EmployeeServlet extends HttpServlet {
             id = new BigDecimal(path.split("/")[1]);
         }
         catch (Exception e){
-            res = JsonUtils.formatJSONObject("retrieved", false, "id is required as number", "employee", null);
+            res = JsonUtils.buildResponse("retrieved", false, "id is required as number", "employee", null);
             response.getWriter().write(res.toString());
             return;
         }
@@ -159,7 +157,7 @@ public class EmployeeServlet extends HttpServlet {
 
     public void getHigherEmployees(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        JsonUtils.prepareResponse(response);
+
         JSONObject res;
 
         BigDecimal id;
@@ -167,7 +165,7 @@ public class EmployeeServlet extends HttpServlet {
             id = new BigDecimal(request.getParameter("id"));
         }
         catch (Exception e){
-            res = JsonUtils.formatJSONObject("retrieved", false, "id is required as number", "higher", null);
+            res = JsonUtils.buildResponse("retrieved", false, "id is required as number", "higher", null);
             response.getWriter().write(res.toString());
             return;
         }

@@ -31,7 +31,7 @@ public class HolidayServlet extends HttpServlet {
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
-        JsonUtils.prepareResponse(response);
+
         JSONObject res;
 
         String path = request.getPathInfo();
@@ -68,7 +68,7 @@ public class HolidayServlet extends HttpServlet {
                 id = new BigDecimal(request.getPathInfo().split("/")[1]);
             }
             catch (Exception e){
-                res = JsonUtils.formatJSONObject("retrieved", false, "invalid holiday id", "holiday", null);
+                res = JsonUtils.buildResponse("retrieved", false, "invalid holiday id", "holiday", null);
                 response.getWriter().write(res.toString());
                 return;
             }
@@ -83,21 +83,21 @@ public class HolidayServlet extends HttpServlet {
 
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        JsonUtils.prepareResponse(response);
+
         JSONObject res = null;
 
         try{
-            Holiday holiday = gson.fromJson(request.getReader(), Holiday.class);
+            Holiday holiday = gson.fromJson(request.getAttribute("requestBody").toString(), Holiday.class);
             // * id is auto generated
             holiday.setId(null);
             if(Date.valueOf(holiday.getToDate()).before(Date.valueOf(holiday.getFromDate()))){
-                res = JsonUtils.formatJSONObject("added", false, "error adding holiday : to_date should be greater than from_date", "holiday", null);
+                res = JsonUtils.buildResponse("added", false, "error adding holiday : to_date should be greater than from_date", "holiday", null);
                 response.getWriter().write(res.toString());
                 return;
             }
             JSONArray overlap = HolidayModel.getHolidaysBetweenDates(holiday.getFromDate(), holiday.getToDate());
             if(!overlap.isEmpty()){
-                res = JsonUtils.formatJSONObject("added", false, "error adding holiday : dates overlap with existing holidays", "holiday", null).put("overlap", overlap);
+                res = JsonUtils.buildResponse("added", false, "error adding holiday : dates overlap with existing holidays", "holiday", null).put("overlap", overlap);
                 response.getWriter().write(res.toString());
                 return;
             }
@@ -105,7 +105,7 @@ public class HolidayServlet extends HttpServlet {
 
         }
         catch (Exception e){
-            res = JsonUtils.formatJSONObject("added", false, "error adding holiday", "holiday", null);
+            res = JsonUtils.buildResponse("added", false, "error adding holiday", "holiday", null);
         }
 
         response.getWriter().write(res.toString());
@@ -114,10 +114,10 @@ public class HolidayServlet extends HttpServlet {
 
     public void doPut(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        JsonUtils.prepareResponse(response);
+
         JSONObject res = null;
 
-        Holiday holiday = gson.fromJson(request.getReader(), Holiday.class);
+        Holiday holiday = gson.fromJson(request.getAttribute("requestBody").toString(), Holiday.class);
         holiday.setId(null);
         String path = request.getPathInfo();
 
@@ -125,13 +125,13 @@ public class HolidayServlet extends HttpServlet {
             holiday.setId(new BigDecimal(path.split("/")[1]));
         }
         catch (Exception e){
-            res = JsonUtils.formatJSONObject("updated", false, "id is required as number", "holiday", null);
+            res = JsonUtils.buildResponse("updated", false, "id is required as number", "holiday", null);
             response.getWriter().write(res.toString());
             return;
         }
 
         if(Date.valueOf(holiday.getToDate()).before(Date.valueOf(holiday.getFromDate()))){
-            res = JsonUtils.formatJSONObject("updated", false, "error updating holiday : to_date should be greater than from_date", "holiday", null);
+            res = JsonUtils.buildResponse("updated", false, "error updating holiday : to_date should be greater than from_date", "holiday", null);
             response.getWriter().write(res.toString());
             return;
         }
@@ -143,7 +143,7 @@ public class HolidayServlet extends HttpServlet {
             }
         }
         if(!overlap.isEmpty()){
-            res = JsonUtils.formatJSONObject("updated", false, "error updating holiday : dates overlap with existing holidays", "holiday", null).put("overlap", overlap);
+            res = JsonUtils.buildResponse("updated", false, "error updating holiday : dates overlap with existing holidays", "holiday", null).put("overlap", overlap);
             response.getWriter().write(res.toString());
             return;
         }
@@ -153,7 +153,7 @@ public class HolidayServlet extends HttpServlet {
 
     public void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        JsonUtils.prepareResponse(response);
+
         JSONObject res = null;
 
         BigDecimal id;
@@ -161,7 +161,7 @@ public class HolidayServlet extends HttpServlet {
             id = new BigDecimal(request.getPathInfo().split("/")[1]);
         }
         catch (Exception e){
-            res = JsonUtils.formatJSONObject("deleted", false, "id is required as number", "holiday", null);
+            res = JsonUtils.buildResponse("deleted", false, "id is required as number", "holiday", null);
             response.getWriter().write(res.toString());
             return;
         }

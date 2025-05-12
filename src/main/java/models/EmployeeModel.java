@@ -32,11 +32,11 @@ public class EmployeeModel {
             pageDetails.put("search_name", searchName);
             pageDetails.put("sort_column", sortCol);
             pageDetails.put("sort_order", sortOrder);
-            return JsonUtils.formatJSONObject("retrieved", (!jsArr.isEmpty()), (!jsArr.isEmpty()) ? "success" : "no employees exist", "employees", jsArr).put("page_details", pageDetails);
+            return JsonUtils.buildResponse("retrieved", (!jsArr.isEmpty()), (!jsArr.isEmpty()) ? "success" : "no employees exist", "employees", jsArr).put("page_details", pageDetails);
         }
         catch(Exception e) {
             e.printStackTrace();
-            return JsonUtils.formatJSONObject("retrieved", false, "error retrieving employees", "employees", null);
+            return JsonUtils.buildResponse("retrieved", false, "error retrieving employees", "employees", null);
         }
     }
 
@@ -49,12 +49,12 @@ public class EmployeeModel {
             ResultSet rs = st.executeQuery();
             JSONArray jsArr = JsonUtils.convertResultSetToJSONArray(rs);
             JSONObject jsObj = jsArr.optJSONObject(0, new JSONObject());
-            return JsonUtils.formatJSONObject("retrieved", (!jsObj.isEmpty()), (!jsObj.isEmpty()) ? "success" : "employee id doesnt exist", "employee", (!jsObj.isEmpty()) ? jsObj : null);
+            return JsonUtils.buildResponse("retrieved", (!jsObj.isEmpty()), (!jsObj.isEmpty()) ? "success" : "employee id doesnt exist", "employee", (!jsObj.isEmpty()) ? jsObj : null);
 
         }
         catch (Exception e){
             e.printStackTrace();
-            return JsonUtils.formatJSONObject("retrieved", false, "error retrieving employee", "employee", null);
+            return JsonUtils.buildResponse("retrieved", false, "error retrieving employee", "employee", null);
         }
     }
 
@@ -78,11 +78,11 @@ public class EmployeeModel {
             BigDecimal id = rs.getBigDecimal(1);
             employee.setId(id);
             JSONObject jsObj = new JSONObject(gson.toJson(employee));
-            return JsonUtils.formatJSONObject("added", true, "success", "employee", jsObj);
+            return JsonUtils.buildResponse("added", true, "success", "employee", jsObj);
 
         } catch (Exception e) {
             e.printStackTrace();
-            return JsonUtils.formatJSONObject("added", false, "error adding employee", "employee", null);
+            return JsonUtils.buildResponse("added", false, "error adding employee", "employee", null);
         }
     }
 
@@ -103,15 +103,15 @@ public class EmployeeModel {
             int updated = st.executeUpdate();
 
             if(updated == 0){
-                return JsonUtils.formatJSONObject("updated", false, "id doesnt exist", "employee", null);
+                return JsonUtils.buildResponse("updated", false, "id doesnt exist", "employee", null);
             }
 
             JSONObject jsObj = new JSONObject(gson.toJson(employee));
-            return JsonUtils.formatJSONObject("updated", true, "success", "employee", jsObj);
+            return JsonUtils.buildResponse("updated", true, "success", "employee", jsObj);
 
         } catch (Exception e) {
             e.printStackTrace();
-            return JsonUtils.formatJSONObject("updated", false, "error updating employee", "employee", null);
+            return JsonUtils.buildResponse("updated", false, "error updating employee", "employee", null);
         }
     }
 
@@ -122,10 +122,10 @@ public class EmployeeModel {
             PreparedStatement st = con.prepareStatement("delete from employee where id=?");
             st.setBigDecimal(1, id);
             int deleted =  st.executeUpdate();
-            return JsonUtils.formatJSONObject("deleted", (deleted > 0), (deleted > 0) ? "success" : "id doesnt exist", "id", (deleted > 0) ? id : null);
+            return JsonUtils.buildResponse("deleted", (deleted > 0), (deleted > 0) ? "success" : "id doesnt exist", "id", (deleted > 0) ? id : null);
         } catch (Exception e) {
             e.printStackTrace();
-            return JsonUtils.formatJSONObject("deleted", false, "error deleting employee", "id", id);
+            return JsonUtils.buildResponse("deleted", false, "error deleting employee", "id", id);
         }
     }
 
@@ -142,11 +142,11 @@ public class EmployeeModel {
             st.setBigDecimal(1, id);
             ResultSet rs = st.executeQuery();
             JSONArray jsArr = JsonUtils.convertResultSetToJSONArray(rs);
-            return JsonUtils.formatJSONObject("retrieved", (!jsArr.isEmpty()), (!jsArr.isEmpty()) ? "success" : "employee id doesnt exist", "employees", jsArr);
+            return JsonUtils.buildResponse("retrieved", (!jsArr.isEmpty()), (!jsArr.isEmpty()) ? "success" : "employee id doesnt exist", "employees", jsArr);
         }
         catch (Exception e){
             e.printStackTrace();
-            return JsonUtils.formatJSONObject("retrieved", false, "error retrieving employees", "employees", null);
+            return JsonUtils.buildResponse("retrieved", false, "error retrieving employees", "employees", null);
         }
     }
 

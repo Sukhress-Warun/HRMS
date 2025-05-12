@@ -4,10 +4,8 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
-import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import javax.servlet.annotation.*;
 
@@ -41,35 +39,28 @@ public class AttendanceServlet extends HttpServlet {
 
     static Gson gson = new GsonBuilder().serializeNulls().create();
 
-    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void doPost(HttpServletRequest request, HttpServletResponse response) {
 
         String path = request.getPathInfo();
         try {
             if (path.equals("/check-in")) {
                 checkIn(request, response);
-                return;
             } else if (path.equals("/check-out")) {
                 checkOut(request, response);
-                return;
             } else if (path.equals("/apply-leave")) {
                 applyLeave(request, response);
-                return;
-            }
-            else if (path.equals("/cancel-leave")) {
+            } else if (path.equals("/cancel-leave")) {
                 cancelLeave(request, response);
-                return;
             }
         }
         catch (Exception e) {
             e.printStackTrace();
-            JsonUtils.prepareResponse(response);
-            response.getWriter().write(JsonUtils.formatJSONObject("error", true, "error occurred", null, null).toString());
-            return;
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
 
     }
 
-    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void doGet(HttpServletRequest request, HttpServletResponse response) {
 
         String path = request.getPathInfo();
         try {
@@ -82,29 +73,21 @@ public class AttendanceServlet extends HttpServlet {
         }
         catch (Exception e) {
             e.printStackTrace();
-            JsonUtils.prepareResponse(response);
-            response.getWriter().write(JsonUtils.formatJSONObject("error", true, "error occurred", null, null).toString());
-            return;
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
 
     }
 
-    public static void checkIn(HttpServletRequest request, HttpServletResponse response) throws Exception {
+    public static void checkIn(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        JsonUtils.prepareResponse(response);
         JSONObject res = null;
+        JSONObject data = (JSONObject) request.getAttribute("requestBody");
+        BigDecimal employeeId = data.getBigDecimal("id");
 
-        JSONObject data = JsonUtils.getRequestJSONObject(request);
-        BigDecimal id;
-        id = data.optBigDecimal("id", null);
-        if (id == null) {
-            res = JsonUtils.formatJSONObject("checked-in", false, "id is required as a Number", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
-            response.getWriter().write(res.toString());
-            return;
-        }
         String date = data.optString("date", null);
         if(date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}")){
-            res = JsonUtils.formatJSONObject("checked-in", false, (date != null) ? "date format is invalid" : "date is required", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            res = JsonUtils.buildResponse("checked-in", false, (date != null) ? "date format is invalid" : "date is required", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
             response.getWriter().write(res.toString());
             return;
         }
@@ -114,7 +97,8 @@ public class AttendanceServlet extends HttpServlet {
 
         String time = data.optString("time", null);
         if(time == null || !time.matches("\\d{2}:\\d{2}:\\d{2}")){
-            res = JsonUtils.formatJSONObject("checked-in", false, (time != null) ? "time format is invalid" : "time is required", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            res = JsonUtils.buildResponse("checked-in", false, (time != null) ? "time format is invalid" : "time is required", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
             response.getWriter().write(res.toString());
             return;
         }
@@ -122,31 +106,26 @@ public class AttendanceServlet extends HttpServlet {
 
 //        String time = new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime());
 
-        res = AttendanceModel.checkIn(id, date, time);
+        res = AttendanceModel.checkIn(employeeId, date, time);
         if(res == null){
-            res = JsonUtils.formatJSONObject("checked-in", false, "error checking in", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            res = JsonUtils.buildResponse("checked-in", false, "error checking in", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
         }
+        response.setStatus(HttpServletResponse.SC_CREATED);
         response.getWriter().write(res.toString());
 
     }
 
     public static void checkOut(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-        JsonUtils.prepareResponse(response);
-        JSONObject res;
 
-        JSONObject data = JsonUtils.getRequestJSONObject(request);
-        BigDecimal id;
-        id = data.optBigDecimal("id", null);
-        if (id == null) {
-            res = JsonUtils.formatJSONObject("checked-out", false, "id is required as a Number", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
-            response.getWriter().write(res.toString());
-            return;
-        }
+        JSONObject res;
+        JSONObject data = (JSONObject) request.getAttribute("requestBody");
+        BigDecimal employeeId = data.getBigDecimal("id");
 
         String date = data.optString("date", null);
         if(date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}")){
-            res = JsonUtils.formatJSONObject("checked-in", false, (date != null) ? "date format is invalid" : "date is required", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            res = JsonUtils.buildResponse("checked-in", false, (date != null) ? "date format is invalid" : "date is required", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
             response.getWriter().write(res.toString());
             return;
         }
@@ -156,7 +135,7 @@ public class AttendanceServlet extends HttpServlet {
 
         String time = data.optString("time", null);
         if(time == null || !time.matches("\\d{2}:\\d{2}:\\d{2}")){
-            res = JsonUtils.formatJSONObject("checked-in", false, (time != null) ? "time format is invalid" : "time is required", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            res = JsonUtils.buildResponse("checked-in", false, (time != null) ? "time format is invalid" : "time is required", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
             response.getWriter().write(res.toString());
             return;
         }
@@ -164,9 +143,9 @@ public class AttendanceServlet extends HttpServlet {
 
 //        String time = new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime());
 
-        res = AttendanceModel.checkOut(id, date, time);
+        res = AttendanceModel.checkOut(employeeId, date, time);
         if(res == null){
-            res = JsonUtils.formatJSONObject("checked-out", false, "error checking out", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
+            res = JsonUtils.buildResponse("checked-out", false, "error checking out", "log", new JSONObject().put("date", JSONObject.NULL).put("time", JSONObject.NULL));
         }
         response.getWriter().write(res.toString());
 
@@ -174,51 +153,35 @@ public class AttendanceServlet extends HttpServlet {
 
     public static void applyLeave(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-        JsonUtils.prepareResponse(response);
+
         JSONObject res;
-
-        JSONObject data = JsonUtils.getRequestJSONObject(request);
-        BigDecimal id;
-
-        id = data.optBigDecimal("id", null);
-        if (id == null) {
-            res = JsonUtils.formatJSONObject("applied_leave", false, "id is required as a Number", "date", JSONObject.NULL);
-            response.getWriter().write(res.toString());
-            return;
-        }
+        JSONObject data = (JSONObject) request.getAttribute("requestBody");
+        BigDecimal employeeId = data.getBigDecimal("id");
 
         String date = data.optString("date", null);
         if(date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}")){
-            res = JsonUtils.formatJSONObject("applied-leave", false, (date != null) ? "date format is invalid" : "date is required", "date", JSONObject.NULL);
+            res = JsonUtils.buildResponse("applied-leave", false, (date != null) ? "date format is invalid" : "date is required", "date", JSONObject.NULL);
             response.getWriter().write(res.toString());
             return;
         }
         date = Date.valueOf(date).toString();
 //        String date = new SimpleDateFormat("yyyy-MM-dd").format(Calendar.getInstance().getTime());
 
-        res = AttendanceModel.applyLeave(id, date);
+        res = AttendanceModel.applyLeave(employeeId, date);
         response.getWriter().write(res.toString());
 
     }
 
     public static void cancelLeave(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-        JsonUtils.prepareResponse(response);
+
         JSONObject res;
-
-        JSONObject data = JsonUtils.getRequestJSONObject(request);
-        BigDecimal id;
-
-        id = data.optBigDecimal("id", null);
-        if (id == null) {
-            res = JsonUtils.formatJSONObject("cancelled_leave", false, "id is required as a Number", "date", JSONObject.NULL);
-            response.getWriter().write(res.toString());
-            return;
-        }
+        JSONObject data = (JSONObject) request.getAttribute("requestBody");
+        BigDecimal employeeId = data.getBigDecimal("id");
 
         String date = data.optString("date", null);
         if (date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}")) {
-            res = JsonUtils.formatJSONObject("cancelled-leave", false, (date != null) ? "date format is invalid" : "date is required", "date", JSONObject.NULL);
+            res = JsonUtils.buildResponse("cancelled-leave", false, (date != null) ? "date format is invalid" : "date is required", "date", JSONObject.NULL);
             response.getWriter().write(res.toString());
             return;
         }
@@ -226,27 +189,26 @@ public class AttendanceServlet extends HttpServlet {
 //        String date = new SimpleDateFormat("yyyy-MM-dd").format(Calendar.getInstance().getTime());
 
 
-        res = AttendanceModel.cancelLeave(id, date);
+        res = AttendanceModel.cancelLeave(employeeId, date);
         response.getWriter().write(res.toString());
     }
 
     public static void status(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-        JsonUtils.prepareResponse(response);
-        JSONObject res;
 
+        JSONObject res;
         BigDecimal id = null;
         try {
             id = new BigDecimal(request.getParameter("id"));
         } catch (Exception e) {
-            res = JsonUtils.formatJSONObject("retreived", false, "id is required as a Number", "attendance", JSONObject.NULL);
+            res = JsonUtils.buildResponse("retreived", false, "id is required as a Number", "attendance", JSONObject.NULL);
             response.getWriter().write(res.toString());
             return;
         }
 
         String date = request.getParameter("date");
         if (date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}")) {
-            res = JsonUtils.formatJSONObject("retrieved", false, (date != null) ? "date format is invalid" : "date is required", "attendance", JSONObject.NULL);
+            res = JsonUtils.buildResponse("retrieved", false, (date != null) ? "date format is invalid" : "date is required", "attendance", JSONObject.NULL);
             response.getWriter().write(res.toString());
             return;
         }
@@ -256,13 +218,13 @@ public class AttendanceServlet extends HttpServlet {
 
         Attendance attendance = AttendanceModel.getAttendance(id, date);
         if (attendance == null) {
-            res = JsonUtils.formatJSONObject("retrieved", false, "error retrieving attendance : no record found", "attendance", JSONObject.NULL);
+            res = JsonUtils.buildResponse("retrieved", false, "error retrieving attendance : no record found", "attendance", JSONObject.NULL);
             response.getWriter().write(res.toString());
             return;
         }
         JSONObject status = AttendanceModel.getStatus(attendance.getId(), false);
         if (status == null) {
-            res = JsonUtils.formatJSONObject("retrieved", false, "error retrieving status", "attendance", JSONObject.NULL);
+            res = JsonUtils.buildResponse("retrieved", false, "error retrieving status", "attendance", JSONObject.NULL);
             response.getWriter().write(res.toString());
             return;
         }
@@ -273,27 +235,26 @@ public class AttendanceServlet extends HttpServlet {
         if(status.get("last_check_out") == JSONObject.NULL){
             status.remove("last_check_out");
         }
-        res = JsonUtils.formatJSONObject("retrieved", true, "success", "attendance", attendanceJSON.put("status", status));
+        res = JsonUtils.buildResponse("retrieved", true, "success", "attendance", attendanceJSON.put("status", status));
         response.getWriter().write(res.toString());
     }
 
     public static void calendar(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-        JsonUtils.prepareResponse(response);
-        JSONObject res;
 
+        JSONObject res;
         BigDecimal id = null;
         try {
             id = new BigDecimal(request.getParameter("id"));
         } catch (Exception e) {
-            res = JsonUtils.formatJSONObject("retrieved", false, "id is required as a Number", "calendar", new JSONArray());
+            res = JsonUtils.buildResponse("retrieved", false, "id is required as a Number", "calendar", new JSONArray());
             response.getWriter().write(res.toString());
             return;
         }
 
         String fromDate = request.getParameter("from_date");
         if (fromDate == null || !fromDate.matches("\\d{4}-\\d{2}-\\d{2}")) {
-            res = JsonUtils.formatJSONObject("retrieved", false, (fromDate != null) ? "date format is invalid" : "date is required", "calendar", new JSONArray());
+            res = JsonUtils.buildResponse("retrieved", false, (fromDate != null) ? "date format is invalid" : "date is required", "calendar", new JSONArray());
             response.getWriter().write(res.toString());
             return;
         }
@@ -301,14 +262,14 @@ public class AttendanceServlet extends HttpServlet {
 
         String toDate = request.getParameter("to_date");
         if (toDate == null || !toDate.matches("\\d{4}-\\d{2}-\\d{2}")) {
-            res = JsonUtils.formatJSONObject("retrieved", false, (toDate != null) ? "date format is invalid" : "date is required", "calendar", new JSONArray());
+            res = JsonUtils.buildResponse("retrieved", false, (toDate != null) ? "date format is invalid" : "date is required", "calendar", new JSONArray());
             response.getWriter().write(res.toString());
             return;
         }
         toDate = Date.valueOf(toDate).toString();
 
         if(Date.valueOf(toDate).before(Date.valueOf(fromDate))){
-            res = JsonUtils.formatJSONObject("retrieved", false, "to_date should be greater than from_date", "calendar", new JSONArray());
+            res = JsonUtils.buildResponse("retrieved", false, "to_date should be greater than from_date", "calendar", new JSONArray());
             response.getWriter().write(res.toString());
             return;
         }
@@ -358,7 +319,7 @@ public class AttendanceServlet extends HttpServlet {
             date = Date.valueOf(date.toLocalDate().plusDays(1));
         }
 
-        res = JsonUtils.formatJSONObject("retrieved", true, "success", "calendar", calendar);
+        res = JsonUtils.buildResponse("retrieved", true, "success", "calendar", calendar);
         response.getWriter().write(res.toString());
     }
 }
