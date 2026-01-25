@@ -1,5 +1,5 @@
 # HRMS (Human Resource Management System)
-
+A Java-based backend Human Resource Management System that manages employees, attendance, leaves, and holidays with strong rule enforcement, including valid check-in/check-out flows, leave eligibility, and conflict prevention across attendance and leave actions. It supports reporting hierarchy resolution, audit logging, and unified calendar views combining attendance, leaves, and holidays.
 
 
 ## Employee Management
