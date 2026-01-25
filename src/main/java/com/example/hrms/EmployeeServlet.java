@@ -129,6 +129,12 @@ public class EmployeeServlet extends HttpServlet {
 
 
         // get all employees
+
+        if(perPage <= 0) perPage = 10;
+        if(page <= 0) page = 1;
+
+        if(perPage > 100) perPage = 100;
+
         res = EmployeeModel.getAllEmployees(searchName, perPage, page, sortCol, sortOrder);
         response.getWriter().write(res.toString());
 
